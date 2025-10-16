@@ -1,3 +1,7 @@
-all : parser
+all : parser/parser.out
 
-parser : parser/
+parser/parser.out :
+	make -C parser
+
+clean :
+	make -C parser clean
