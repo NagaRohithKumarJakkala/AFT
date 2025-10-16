@@ -1,10 +1,10 @@
-all:parser 
+all:parser/parser.out
 
-aft.tab.h:aft.y
-	bison -d aft.y
-lex: aft.tab.h aft.l
-	flex aft.l
-parser: lex
-	g++ lex.yy.c aft.tab.c -o parser
+parser/aft.tab.h parser/aft.tab.c: parser/aft.y
+	bison -d parser/aft.y -o parser/aft.tab.c
+parser/lex.yy.c: parser/aft.l
+	flex -o parser/lex.yy.c parser/aft.l
+parser/parser.out: parser/lex.yy.c parser/aft.tab.c parser/aft.tab.h
+	clang++ parser/lex.yy.c parser/aft.tab.c -o parser/parser.out
 clean:
-	rm -f aft.tab.h lex.yy.c parser aft.tab.c
+	rm -f parser/*.tab.* parser/*.yy.c parser/*.out
