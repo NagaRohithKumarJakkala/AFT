@@ -34,19 +34,19 @@ OCTAL [0-7]
 }
 
 
-{DIGIT}+"."{DIGIT}*{EXPONENT}?  { return FLOAT;}
-"."{DIGIT}+{EXPONENT}?           { return FLOAT; }
-{DIGIT}+{EXPONENT}               { return FLOAT; }
+{DIGIT}+"."{DIGIT}*{EXPONENT}?  { yylval.sval = strdup(yytext); return FLOAT;}
+"."{DIGIT}+{EXPONENT}?           { yylval.sval = strdup(yytext); return FLOAT; }
+{DIGIT}+{EXPONENT}               { yylval.sval = strdup(yytext); return FLOAT; }
 
-"0b"{BINARY}+                    {  return INTEGER; }
-"0o"{OCTAL}+                     {  return INTEGER; }
-"0x"{HEX}+                       {  return INTEGER; }
-{DIGIT}+                         { return INTEGER; }
+"0b"{BINARY}+                    {  yylval.sval = strdup(yytext); return INTEGER; }
+"0o"{OCTAL}+                     {  yylval.sval = strdup(yytext); return INTEGER; }
+"0x"{HEX}+                       {  yylval.sval = strdup(yytext); return INTEGER; }
+{DIGIT}+                         {  yylval.sval = strdup(yytext); return INTEGER; }
 
-{DIGIT}+"."{DIGIT}*{EXPONENT}?"j"  { return COMPLEX;}
-"."{DIGIT}+{EXPONENT}?"j"           { return COMPLEX;}
-{DIGIT}+{EXPONENT}"j"               { return COMPLEX;}
-{DIGIT}+"j"                         { return COMPLEX;}
+{DIGIT}+"."{DIGIT}*{EXPONENT}?"j"   { yylval.sval = strdup(yytext); return COMPLEX;}
+"."{DIGIT}+{EXPONENT}?"j"           { yylval.sval = strdup(yytext); return COMPLEX;}
+{DIGIT}+{EXPONENT}"j"               { yylval.sval = strdup(yytext); return COMPLEX;}
+{DIGIT}+"j"                         { yylval.sval = strdup(yytext); return COMPLEX;}
 
 [ \t\r]+                { /* Skip whitespace */ }
 
@@ -138,7 +138,7 @@ OCTAL [0-7]
 ".."                { return RANGE;}
 "..="               { return RANGEUPTO;}
 
-{ALPHA}{ALPHANUM}+                { return IDENTIFIER;}
+{ALPHA}{ALPHANUM}+          { yylval.sval = strdup(yytext); return IDENTIFIER;}
 
 \n                  { return EOL;}
 .                       { 
