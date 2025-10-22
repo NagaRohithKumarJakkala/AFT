@@ -36,6 +36,19 @@
 
 %token EOL
 
+
+%type program
+%type function_decl
+%type statement var_decl assignment if_stmt while_stmt for_stmt repeat_stmt return_stmt
+%type statement_list statement_block
+%type expression 
+%type literal vector_literal range_expr
+%type expression_list vector_elements
+%type type primitive_type vector_type
+%type type_list return_type_list
+%type parameter
+%type parameter_list
+
 %left RETURN
 %left COMMA
 %right ASSIGN
@@ -53,11 +66,320 @@
 %right NOT
 %left LEFTPAREN LEFTSQUAREBRACE DOT
 
-%start S
+%start program
 
 %%
-    S:
+
+program:
+    /* empty */{
+
+    }
+    | program function_decl{
+
+    }
+    | program statement {
+
+    }
     ;
+
+function_decl:
+    FUNCTION IDENTIFIER LEFTPAREN parameter_list RIGHTPAREN return_type_list statement_block{
+
+    }
+    |
+    FUNCTION IDENTIFIER LEFTPAREN RIGHTPAREN return_type_list statement_block{
+
+    }
+    ;
+
+parameter_list:
+    parameter {
+
+    }
+    | parameter_list COMMA parameter {
+
+    }
+    ;
+
+parameter:
+    IDENTIFIER COLON type {
+
+    }
+    ;
+
+return_type_list:
+    /* empty */ {
+        
+    }
+    | type {
+
+    }
+    | LEFTPAREN type_list RIGHTPAREN {
+        
+    }
+    ;
+
+type_list:
+    type {
+
+    }
+    | type_list COMMA type {
+
+    }
+    ;
+
+type:
+    primitive_type {
+
+    }
+    | vector_type {
+
+    }
+    ;
+
+primitive_type:
+    I8{
+
+    }
+    | I16{
+
+    }
+    | I32{
+
+    }
+    | I64{
+
+    }
+    | I128{
+        
+    }
+    | U8{
+        
+    }
+    | U16{
+
+    }
+    | U32{
+
+    }
+    | U64{
+
+    }
+    | U128{
+        
+    }
+    | F32{
+        
+    }
+    | F64{
+
+    }
+    | C32{
+
+    }
+    | C64{
+
+    }
+    | BOOL{
+        
+    }
+
+vector_type:
+    LEFTSQUAREBRACE type RIGHTSQUAREBRACE{
+
+    }
+    ;
+
+statement_block:
+    LEFTBRACE statement_list RIGHTBRACE{
+
+    }
+    | LEFTBRACE RIGHTBRACE{
+
+    }
+    ;
+
+statement_list:
+    statement {
+
+    }
+    |statement_list statement{
+
+    }
+    ;
+
+statement :
+    var_decl SEMICOLON {
+
+    }
+    | assignment SEMICOLON{
+
+    }
+    | expression SEMICOLON{
+
+    }
+    | if_stmt{
+
+    }
+    | while_stmt{
+
+    }
+    | for_stmt{
+
+    }
+    | repeat_stmt{
+
+    }
+    | return_stmt{
+
+    }
+    |BREAK SEMICOLON{
+
+    }
+    |CONTINUE SEMICOLON{
+
+    }
+
+var_decl:
+    LET identifier_list ASSIGN expression_list {
+
+    }
+    | LET identifier_list COLON type ASSIGN expression_list {
+
+    }
+    | LET LEFTPAREN identifier_list RIGHTPAREN expression {
+
+    }
+    | CONST identifier_list COLON type ASSIGN expression_list {
+
+    }
+    ;
+
+identifier_list:
+    IDENTIFIER {
+
+    }
+    | identifier_list COMMA IDENTIFIER {
+
+    }
+    ;
+
+assignment:
+    expression ASSIGN expression {
+
+    }
+    | LEFTPAREN expression_list RIGHTPAREN ASSIGN expression {
+
+    }
+    ;
+
+if_stmt:
+    IF expression statement_block {
+
+    }
+    | IF expression statement_block ELSE statement_block {
+
+    }
+    | IF expression statement_block ELSE if_stmt{
+
+    }
+    ;
+
+while_stmt:
+    WHILE expression statement_block {
+
+    }
+    ;
+
+for_stmt:
+    FOR IDENTIFIER IN expression statement_block {
+
+    }
+    ;
+
+repeat_stmt:
+    REPEAT expression statement_block {
+
+    }
+    ;
+
+return_stmt:
+    RETURN expression_list {
+
+    }
+    |
+    RETURN LEFTPAREN expression_list RIGHTPAREN {
+
+    }
+    | RETURN {
+
+    }
+    ;
+
+expression:
+    /* empty */  {
+        // write the grammer for expression later
+    }
+
+expression_list:
+    expression {
+
+    }
+    | expression_list COMMA expression {
+
+    }
+    ;
+
+literal:
+    INTEGER {
+
+    }
+    | FLOAT {
+
+    }
+    | COMPLEX {
+
+    }
+    | TRUE {
+
+    }
+    | FALSE {
+
+    }
+    | PI {
+
+    }
+    | vector_literal {
+
+    }
+
+vector_literal:
+    LEFTSQUAREBRACE vector_elements RIGHTSQUAREBRACE {
+
+    }
+    | LEFTSQUAREBRACE RIGHTSQUAREBRACE{
+
+    }
+
+vector_elements:
+    expression {
+
+    }
+    | vector_elements COMMA expression {
+
+    }
+    ;
+
+range_expr:
+    expression RANGE expression {
+
+    }
+    | expression RANGEUPTO expression {
+
+    }
+    ;
+
+
 %%
 
 int main(int argc, char** argv) {
@@ -71,7 +393,7 @@ int main(int argc, char** argv) {
         yyin = file;
     }
     
-    int result = yyparse();
+    yyparse();
     
     return 0;
 }
