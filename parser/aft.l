@@ -1,8 +1,15 @@
 %{
 #include "aft.tab.h"
+#include <string.h>
+
+int col_num = 1;
+
+#define YY_USER_ACTION col_num += yyleng;
 %}
 
 %x COMMENT
+
+%option yylineno
 
 DIGIT [0-9]
 EXPONENT   ([eE][+-]?[0-9]+)
@@ -17,9 +24,10 @@ ALPHANUM [a-zA-Z0-9_]
 "/*"                    { BEGIN(COMMENT); }
 <COMMENT>{
     "*/"                { BEGIN(INITIAL); }
-    [^*\n]+             ;
-    "*"                 ;
-    \n                  ;
+    [^*\n]+             { /* Skip comment content */ }
+    "*"                 { /* Skip lone asterisk */ }
+    \n                  { /* Skip new line */ }
+    <<EOF>>             { printf("Error: Unterminated comment\n"); return 0; }
 }
 
 
@@ -35,6 +43,7 @@ ALPHANUM [a-zA-Z0-9_]
 
 {DIGIT}*j                         { return COMPLEX;}
 
+[ \t\r]+                { /* Skip whitespace */ }
 
 "+"                               { return PLUS;}
 "-"                               { return MINUS;}
@@ -71,6 +80,8 @@ ALPHANUM [a-zA-Z0-9_]
 
 ":"                 { return COLON;}
 ";"                 { return SEMICOLON;}
+"."                     { return DOT; }
+
 
 "**"                { return EXPONENTIATE;}
 ".*"                { return CONVOLUTION;}
@@ -122,7 +133,10 @@ ALPHANUM [a-zA-Z0-9_]
 {ALPHA}{ALPHANUM}+                { return IDENTIFIER;}
 
 \n                  { return EOL;}
-. {printf("unexecpted");}
+.                       { 
+                            printf("Unexpected character: '%c' at line %d, column %d\n", 
+                                   yytext[0], yylineno, col_num); 
+                        }
 
 %%
 
