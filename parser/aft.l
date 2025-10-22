@@ -69,6 +69,9 @@ ALPHANUM [a-zA-Z0-9_]
 "["                 { return LEFTSQUAREBRACE; }
 "]"                 { return RIGHTSQUAREBRACE; }
 
+":"                 { return COLON;}
+";"                 { return SEMICOLON;}
+
 "**"                { return EXPONENTIATE;}
 ".*"                { return CONVOLUTION;}
 
