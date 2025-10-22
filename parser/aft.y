@@ -1,98 +1,38 @@
 %{
     #include<stdio.h>
-    int yylex();
+    #include <stdlib.h>
+    #include <string.h>
+    #include "AST.h"
+    extern int yylex();
+    extern int yylineno;
+
     void yyerror(const char*s);
 %}
 
-%token INTEGER
-%token FLOAT
-%token COMPLEX
+%union {
+    char* sval;
+}
 
-%token IDENTIFIER
+%token <sval> INTEGER FLOAT COMPLEX IDENTIFIER
+%token  TRUE FALSE
+%token  PI
 
-%token PLUS
-%token MINUS
-%token MULTIPLY
-%token DIVIDE
-%token MODULO
+%token LET CONST FUNCTION RETURN IF ELSE WHILE FOR IN REPEAT
+%token STRUCT ENUM AS CONTINUE BREAK STATIC
 
-%token EQUALS
-%token NOTEQUAL
-%token LESSTHAN
-%token GREATERTHAN
-%token LESSTHANEQUAL
-%token GREATERTHANEQUAL
+%token I8 I16 I32 I64 I128
+%token U8 U16 U32 U64 U128
+%token F32 F64 C32 C64 BOOL
 
-%token AND
-%token OR
-%token XOR
-%token NOT
-
-%token BITWISEAND
-%token BITWISEOR
-%token LEFTSHIFT
-%token RIGHTSHIFT
-
-
-
-%token ASSIGN
-%token COMMA
-
-
-%token LEFTBRACE
-%token RIGHTBRACE
-%token LEFTPAREN
-%token RIGHTPAREN
-%token LEFTSQUAREBRACE
-%token RIGHTSQUAREBRACE
-
-
+%token PLUS MINUS MULTIPLY DIVIDE MODULO EXPONENTIATE
+%token EQUALS NOTEQUAL LESSTHAN GREATERTHAN LESSTHANEQUAL GREATERTHANEQUAL
+%token AND OR XOR NOT
+%token BITWISEAND BITWISEOR LEFTSHIFT RIGHTSHIFT
 %token CONVOLUTION
-%token EXPONENTIATE
+%token RANGE RANGEUPTO
 
-%token I8
-%token I16
-%token I32
-%token I64
-%token I128
-
-%token U8
-%token U16
-%token U32
-%token U64
-%token U128
-
-%token F32
-%token F64
-
-%token C32
-%token C64
-%token BOOL
-
-%token STRING
-
-%token RANGE
-%token RANGEUPTO
-
-%token LET
-%token CONST
-%token FUNCTION
-%token RETURN
-%token IF
-%token ELSE
-%token WHILE
-%token FOR
-%token REPEAT
-%token STRUCT
-%token ENUM
-%token TRUE
-%token FALSE
-%token AS
-%token CONTINUE
-%token BREAK
-%token STATIC
-%token PI
-
+%token ASSIGN COMMA SEMICOLON COLON DOT
+%token LEFTBRACE RIGHTBRACE LEFTPAREN RIGHTPAREN LEFTSQUAREBRACE RIGHTSQUAREBRACE
 
 %token EOL
 %start S
