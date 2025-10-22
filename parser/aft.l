@@ -16,6 +16,9 @@ EXPONENT   ([eE][+-]?[0-9]+)
 ALPHA [a-zA-Z_]
 ALPHANUM [a-zA-Z0-9_]
 
+HEX [0-9a-fA-F]
+BINARY [01]
+OCTAL [0-7]
 
 %%
 
@@ -35,6 +38,9 @@ ALPHANUM [a-zA-Z0-9_]
 "."{DIGIT}+{EXPONENT}?           { return FLOAT; }
 {DIGIT}+{EXPONENT}               { return FLOAT; }
 
+"0b"{BINARY}+                    {  return INTEGER; }
+"0o"{OCTAL}+                     {  return INTEGER; }
+"0x"{HEX}+                       {  return INTEGER; }
 {DIGIT}+                         { return INTEGER; }
 
 {DIGIT}+"."{DIGIT}*{EXPONENT}?"j"  { return COMPLEX;}
@@ -79,7 +85,10 @@ ALPHANUM [a-zA-Z0-9_]
 
 ":"                 { return COLON;}
 ";"                 { return SEMICOLON;}
-"."                     { return DOT; }
+"."                 { return DOT; }
+
+".."                { return RANGE; }
+"..="               { return RANGEUPTO; }
 
 
 "**"                { return EXPONENTIATE;}
