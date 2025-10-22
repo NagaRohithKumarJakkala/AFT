@@ -4,6 +4,6 @@
 class ASTNode{
 public:
     virtual ~ASTNode() = default;
-}
+};
 
 #endif

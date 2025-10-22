@@ -5,6 +5,7 @@
     #include "AST.h"
     extern int yylex();
     extern int yylineno;
+    extern char *yytext;
 
     void yyerror(const char*s);
 %}

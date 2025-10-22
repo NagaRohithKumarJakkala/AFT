@@ -114,7 +114,7 @@ OCTAL [0-7]
 
 "bool"              { return BOOL; }
 
-"string"            { return STRING; }
+
 
 "let"               { return LET; }
 "const"             { return CONST; }
@@ -134,9 +134,6 @@ OCTAL [0-7]
 "break"             { return BREAK; }
 "static"            { return STATIC; }
 "PI"                { return PI; }
-
-".."                { return RANGE;}
-"..="               { return RANGEUPTO;}
 
 {ALPHA}{ALPHANUM}+          { yylval.sval = strdup(yytext); return IDENTIFIER;}
 
