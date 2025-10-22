@@ -37,11 +37,10 @@ ALPHANUM [a-zA-Z0-9_]
 
 {DIGIT}+                         { return INTEGER; }
 
-{DIGIT}+"."{DIGIT}*{EXPONENT}?j  { return COMPLEX;}
-"."{DIGIT}+{EXPONENT}?j           { return COMPLEX;}
-{DIGIT}+{EXPONENT}j               { return COMPLEX;}
-
-{DIGIT}*j                         { return COMPLEX;}
+{DIGIT}+"."{DIGIT}*{EXPONENT}?"j"  { return COMPLEX;}
+"."{DIGIT}+{EXPONENT}?"j"           { return COMPLEX;}
+{DIGIT}+{EXPONENT}"j"               { return COMPLEX;}
+{DIGIT}+"j"                         { return COMPLEX;}
 
 [ \t\r]+                { /* Skip whitespace */ }
 
@@ -125,7 +124,7 @@ ALPHANUM [a-zA-Z0-9_]
 "continue"          { return CONTINUE; }
 "break"             { return BREAK; }
 "static"            { return STATIC; }
-"pi"                { return PI; }
+"PI"                { return PI; }
 
 ".."                { return RANGE;}
 "..="               { return RANGEUPTO;}
