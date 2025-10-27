@@ -54,7 +54,7 @@ OCTAL [0-7]
 "-"                               { return MINUS;}
 "*"                               { return MULTIPLY;}
 "/"                               { return DIVIDE;}
-"%%"                               { return MODULO;}
+"%"                               { return MODULO;}
 
 "=="                { return EQUALS; }
 "!="                { return NOTEQUAL; }
