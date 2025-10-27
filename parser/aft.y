@@ -373,6 +373,8 @@ expression:
     | expression LEFTSHIFT expression {}
     | expression RIGHTSHIFT expression {}
     | expression CONVOLUTION expression {}
+    | expression LEFTSQUARE expression RIGHTSQUARE {}
+    | expression AS type
     | literal
     ;
 
