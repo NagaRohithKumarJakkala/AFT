@@ -1,0 +1,131 @@
+// Sample AFT Program for Testing Parser
+
+const TAU: f64 = 2. * PI;
+const (ZERO, ONE): (bool, bool) = (false, true);
+
+struct Point3 {
+    x: f64,
+    y: f64,
+    z: f64
+}
+
+// Simple variable declarations
+fn basic_var_decl () {
+let x = 42;
+let y = 3.14;
+let z = 2.0 + 3.0j;
+
+// Vector declarations
+let vec = [1, 2, 3, 4, 5];
+let empty_vec = [];
+
+// Arithmetic expressions
+let a = 10 + 20;
+let b = 5 * 6;
+let c = 2 ** 8;
+let d = (3 + 4) * 5;
+
+// Comparison expressions
+let is_equal = 10 == 10;
+let is_greater = 5 > 3;
+
+// Logical expressions
+let logical_and = true && false;
+let logical_or = true || false;
+}
+
+// Simple function
+fn add(x: i32, y: i32) i32 {
+    return x + y;
+}
+
+// Function with multiple return values
+fn divide_and_mod(a: i32, b: i32) (i32, i32) {
+    return a / b, a % b;
+}
+
+// If statement
+fn test_if(x: i32) {
+    if x > 0 {
+        let positive = true;
+    } else {
+        let negative = true;
+    }
+}
+
+// While loop
+fn count_down(n: i32) {
+    let i = n;
+    while i > 0 {
+        i = i - 1;
+    }
+}
+
+// For loop
+fn sum_range() {
+    let total = 0;
+    for i in 0..10 {
+        total = total + i;
+    }
+}
+
+// Repeat loop
+fn repeat_test() {
+    repeat 5 {
+        let x = 1;
+    }
+}
+
+// Complex expressions with precedence
+fn test_precedence() {
+    let a = 2 + 3 * 4;        // Should parse as 2 + (3 * 4)
+    let b = 10 - 5 - 2;       // Should parse as (10 - 5) - 2
+    let c = 2 ** 3 ** 2;      // Should parse as 2 ** (3 ** 2)
+    let d = x && y || z;      // Should parse with correct precedence
+}
+
+// Array subscript
+fn array_access() {
+    let arr = [1, 2, 3, 4];
+    let first = arr[0];
+    let second = arr[1];
+}
+
+// Function calls
+fn function_calls() {
+    let sum = add(10, 20);
+    let result = divide_and_mod(17, 5);
+}
+
+// Type casting
+fn type_casts() {
+    let f = 3.14;
+    let i = f as i32;
+    let vec_int = [1, 2, 3];
+    let vec_float = vec_int as [f64];
+}
+
+// Range expressions
+fn ranges() {
+    let r1 = 0..10;      // Exclusive range
+    let r2 = 0..=10;     // Inclusive range
+}
+
+// Vector concatenation
+fn vector_ops() {
+    let v1 = [1, 2, 3];
+    let v2 = [4, 5, 6];
+    let v3 = v1 || v2;   // Concatenation
+}
+
+// Unary operators
+fn unary_test() {
+    let pos = +5;
+    let neg = -10;
+    let not_val = !true;
+}
+
+// Nested expressions
+fn nested() {
+    let result = ((1 + 2) * (3 + 4)) / ((5 - 2) + 1);
+}
