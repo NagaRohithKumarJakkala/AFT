@@ -268,7 +268,7 @@ const_decl:
     ;
 
 identifier_list:
-    IDENTIFIER {
+    IDENTIFIER COMMA IDENTIFIER {
 
     }
     | identifier_list COMMA IDENTIFIER {
