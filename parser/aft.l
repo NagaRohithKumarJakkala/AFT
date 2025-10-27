@@ -122,6 +122,7 @@ OCTAL [0-7]
 "fn"          { return FUNCTION; }
 "return"            { return RETURN; }
 "if"                { return IF; }
+"in"                { return IN; }
 "else"              { return ELSE; }
 "while"             { return WHILE; }
 "for"               { return FOR; }
