@@ -2,7 +2,7 @@
 #include "aft.tab.h"
 #include <string.h>
 
-int col_num = 1;
+int col_num = 0;
 
 #define YY_USER_ACTION col_num += yyleng;
 %}
