@@ -81,11 +81,10 @@ program:
     ;
 
 function_decl:
-    FUNCTION IDENTIFIER LEFTPAREN parameter_list RIGHTPAREN return_type_list statement_block{
-
+    FUNCTION IDENTIFIER LEFTPAREN parameter_list RIGHTPAREN return_type_list statement_block {
     }
     |
-    FUNCTION IDENTIFIER LEFTPAREN RIGHTPAREN return_type_list statement_block{
+    FUNCTION IDENTIFIER LEFTPAREN RIGHTPAREN return_type_list statement_block {
 
     }
     ;
@@ -107,13 +106,13 @@ parameter:
 
 return_type_list:
     /* empty */ {
-        
+
     }
     | type {
 
     }
     | LEFTPAREN type_list RIGHTPAREN {
-        
+
     }
     ;
 
@@ -136,50 +135,50 @@ type:
     ;
 
 primitive_type:
-    I8{
+    I8 {
 
     }
-    | I16{
+    | I16 {
 
     }
-    | I32{
+    | I32 {
 
     }
-    | I64{
+    | I64 {
 
     }
-    | I128{
-        
-    }
-    | U8{
-        
-    }
-    | U16{
+    | I128 {
 
     }
-    | U32{
+    | U8 {
 
     }
-    | U64{
+    | U16 {
 
     }
-    | U128{
-        
-    }
-    | F32{
-        
-    }
-    | F64{
+    | U32 {
 
     }
-    | C32{
+    | U64 {
 
     }
-    | C64{
+    | U128 {
 
     }
-    | BOOL{
-        
+    | F32 {
+
+    }
+    | F64 {
+
+    }
+    | C32 {
+
+    }
+    | C64 {
+
+    }
+    | BOOL {
+
     }
 
 vector_type:
@@ -189,10 +188,10 @@ vector_type:
     ;
 
 statement_block:
-    LEFTBRACE statement_list RIGHTBRACE{
+    LEFTBRACE statement_list RIGHTBRACE {
 
     }
-    | LEFTBRACE RIGHTBRACE{
+    | LEFTBRACE RIGHTBRACE {
 
     }
     ;
@@ -201,34 +200,34 @@ statement_list:
     statement {
 
     }
-    |statement_list statement{
+    | statement_list statement {
 
     }
     ;
 
 statement :
-    var_decl SEMICOLON {
+    let_decl SEMICOLON {
 
     }
-    | assignment SEMICOLON{
+    | const_decl SEMICOLON {
 
     }
-    | expression SEMICOLON{
+    | assignment SEMICOLON {
 
     }
-    | if_stmt{
+    | expression SEMICOLON {
 
     }
-    | while_stmt{
+    | if_stmt {
 
     }
-    | for_stmt{
+    | while_stmt {
 
     }
-    | repeat_stmt{
+    | for_stmt {
 
     }
-    | return_stmt{
+    | repeat_stmt {
 
     }
     | return_stmt SEMICOLON {
@@ -398,14 +397,13 @@ int main(int argc, char** argv) {
         extern FILE* yyin;
         yyin = file;
     }
-    
+
     yyparse();
-    
+
     return 0;
 }
 
-void yyerror(const char*s){
+void yyerror(const char*s) {
     fprintf(stderr, "Parse error at line %d: %s\n", yylineno, s);
     fprintf(stderr, "Near token: %s\n", yytext);
 }
-
