@@ -78,6 +78,13 @@ program:
     }
     | program const_decl {
     }
+    | program struct_decl {
+    }
+    ;
+
+struct_decl:
+    STRUCT IDENTIFIER LEFTBRACE RIGHTBRACE {}
+    | STRUCT IDENTIFIER LEFTBRACE parameter_list RIGHTBRACE {}
     ;
 
 function_decl:
@@ -131,6 +138,8 @@ type:
     }
     | vector_type {
 
+    }
+    | IDENTIFIER { // Struct
     }
     ;
 
