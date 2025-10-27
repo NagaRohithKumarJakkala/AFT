@@ -34,9 +34,23 @@ OCTAL [0-7]
 }
 
 
-{DIGIT}+"."{DIGIT}*{EXPONENT}?  { yylval.sval = strdup(yytext); return FLOAT;}
-"."{DIGIT}+{EXPONENT}?           { yylval.sval = strdup(yytext); return FLOAT; }
-{DIGIT}+{EXPONENT}               { yylval.sval = strdup(yytext); return FLOAT; }
+".."                { return RANGE; }
+"..="               { return RANGEUPTO; }
+
+{DIGIT}+"." {
+    char c = yyinput();
+    unput(c);
+    if (c == '.') {
+        yyless(yyleng - 1);
+        yylval.sval = strndup(yytext, yyleng - 1);
+        return INTEGER;
+    }
+    yylval.sval = strdup(yytext);
+    return FLOAT;
+}
+{DIGIT}+"."{DIGIT}+{EXPONENT}? { yylval.sval = strdup(yytext); return FLOAT; }
+"."{DIGIT}+{EXPONENT}?              { yylval.sval = strdup(yytext); return FLOAT; }
+{DIGIT}+{EXPONENT}                  { yylval.sval = strdup(yytext); return FLOAT; }
 
 "0b"{BINARY}+                    {  yylval.sval = strdup(yytext); return INTEGER; }
 "0o"{OCTAL}+                     {  yylval.sval = strdup(yytext); return INTEGER; }
@@ -86,10 +100,6 @@ OCTAL [0-7]
 ":"                 { return COLON;}
 ";"                 { return SEMICOLON;}
 "."                 { return DOT; }
-
-".."                { return RANGE; }
-"..="               { return RANGEUPTO; }
-
 
 "**"                { return EXPONENTIATE;}
 ".*"                { return CONVOLUTION;}
