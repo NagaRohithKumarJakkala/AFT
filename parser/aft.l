@@ -137,7 +137,7 @@ OCTAL [0-7]
 "static"            { return STATIC; }
 "PI"                { return PI; }
 
-{ALPHA}{ALPHANUM}+          { yylval.sval = strdup(yytext); return IDENTIFIER;}
+{ALPHA}{ALPHANUM}*          { yylval.sval = strdup(yytext); return IDENTIFIER;}
 
 \n                  { return EOL;}
 .                       {
