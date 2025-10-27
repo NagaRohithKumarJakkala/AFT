@@ -35,9 +35,6 @@
 %token ASSIGN COMMA SEMICOLON COLON DOT
 %token LEFTBRACE RIGHTBRACE LEFTPAREN RIGHTPAREN LEFTSQUARE RIGHTSQUARE
 
-%token EOL
-
-
 %type program
 %type function_decl
 %type statement let_decl const_decl assignment if_stmt while_stmt for_stmt repeat_stmt return_stmt

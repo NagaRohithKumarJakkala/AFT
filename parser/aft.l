@@ -139,7 +139,7 @@ OCTAL [0-7]
 
 {ALPHA}{ALPHANUM}*          { yylval.sval = strdup(yytext); return IDENTIFIER;}
 
-\n                  { return EOL;}
+\n                  { col_num = 0; }
 .                       {
                             printf("Unexpected character: '%c' at line %d, column %d\n",
                                    yytext[0], yylineno, col_num);
