@@ -44,7 +44,7 @@
 %type statement_list statement_block
 %type expression
 %type literal vector_literal range_expr
-%type expression_list vector_elements
+%type expression_list
 %type type primitive_type vector_type
 %type type_list return_type_list
 %type parameter
@@ -334,6 +334,14 @@ return_stmt:
     }
     ;
 
+function_call:
+    IDENTIFIER LEFTPAREN argument_list RIGHTPAREN {}
+    ;
+
+argument_list:
+    expression_list {}
+    | /* empty */ {}
+    ;
 
 unary_expression:
     PLUS expression %prec UNARY_PLUS {}
@@ -341,9 +349,34 @@ unary_expression:
     | REVERSE expression {}
 
 expression:
-    /* empty */  {
-        // write the grammer for expression later
-    }
+    range_expr
+    | function_call
+    | IDENTIFIER
+    | LEFTPAREN expression RIGHTPAREN {}
+    | unary_expression
+    | expression PLUS expression {}
+    | expression MINUS expression {}
+    | expression MULTIPLY expression {}
+    | expression DIVIDE expression {}
+    | expression MODULO expression {}
+    | expression EXPONENTIATE expression {}
+    | expression EQUALS expression {}
+    | expression NOTEQUAL expression {}
+    | expression LESSTHAN expression {}
+    | expression GREATERTHAN expression {}
+    | expression LESSTHANEQUAL expression {}
+    | expression GREATERTHANEQUAL expression {}
+    | expression AND expression {}
+    | expression OR expression {}
+    | expression XOR expression {}
+    | NOT expression {}
+    | expression BITWISEAND expression {}
+    | expression BITWISEOR expression {}
+    | expression LEFTSHIFT expression {}
+    | expression RIGHTSHIFT expression {}
+    | expression CONVOLUTION expression {}
+    | literal
+    ;
 
 expression_list:
     expression {
