@@ -50,7 +50,7 @@
 %type parameter
 %type parameter_list
 
-%left RETURN
+%nonassoc RETURN
 %left COMMA
 %right ASSIGN
 %left OR
