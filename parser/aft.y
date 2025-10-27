@@ -261,10 +261,10 @@ let_decl:
     | LET IDENTIFIER COLON type ASSIGN expression {
 
     }
-    | LET LEFTPAREN identifier_list RIGHTPAREN ASSIGN expression_list {
+    | LET LEFTPAREN identifier_list RIGHTPAREN ASSIGN LEFTPAREN expression_list RIGHTPAREN {
 
     }
-    | LET LEFTPAREN identifier_list RIGHTPAREN COLON LEFTPAREN type_list RIGHTPAREN ASSIGN expression_list {
+    | LET LEFTPAREN identifier_list RIGHTPAREN COLON LEFTPAREN type_list RIGHTPAREN ASSIGN LEFTPAREN expression_list RIGHTPAREN {
 
     }
     ;
@@ -273,7 +273,7 @@ const_decl:
     CONST IDENTIFIER COLON type ASSIGN expression {
 
     }
-    | CONST LEFTPAREN identifier_list RIGHTPAREN COLON LEFTPAREN type_list RIGHTPAREN ASSIGN expression_list {
+    | CONST LEFTPAREN identifier_list RIGHTPAREN COLON LEFTPAREN type_list RIGHTPAREN ASSIGN LEFTPAREN expression_list RIGHTPAREN {
 
     }
     ;
