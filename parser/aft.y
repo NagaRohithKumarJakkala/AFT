@@ -75,7 +75,7 @@ program:
     }
     | program function_decl {
     }
-    | program const_decl {
+    | program const_decl SEMICOLON {
     }
     | program struct_decl {
     }
