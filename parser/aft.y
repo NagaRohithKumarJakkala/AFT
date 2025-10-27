@@ -14,7 +14,7 @@
     char* sval;
 }
 
-%token <sval> INTEGER FLOAT COMPLEX IDENTIFIER
+%token <sval> INTEGER FLOAT COMPLEX IDENTIFIER STRING
 %token  TRUE FALSE
 %token  PI
 
@@ -292,7 +292,7 @@ if_stmt:
     | IF expression statement_block ELSE statement_block {
 
     }
-    | IF expression statement_block ELSE if_stmt{
+    | IF expression statement_block ELSE if_stmt {
 
     }
     ;
@@ -364,6 +364,8 @@ literal:
     | vector_literal {
 
     }
+    | STRING {}
+    ;
 
 vector_literal:
     LEFTSQUARE vector_elements RIGHTSQUARE {}
@@ -386,7 +388,6 @@ range_expr:
 
     }
     ;
-
 
 %%
 
