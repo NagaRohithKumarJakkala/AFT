@@ -277,10 +277,10 @@ identifier_list:
     ;
 
 assignment:
-    expression ASSIGN expression {
+    IDENTIFIER ASSIGN expression {
 
     }
-    | LEFTPAREN expression_list RIGHTPAREN ASSIGN expression {
+    | LEFTPAREN identifier_list RIGHTPAREN ASSIGN LEFTPAREN expression_list RIGHTPAREN {
 
     }
     ;
