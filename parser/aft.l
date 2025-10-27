@@ -65,7 +65,7 @@ OCTAL [0-7]
 
 "&&"                { return AND; }
 "||"                { return OR; }
-"^"                { return XOR; }    
+"^"                { return XOR; }
 "!"                 { return NOT; }
 
 "&"                 { return BITWISEAND; }
@@ -93,6 +93,7 @@ OCTAL [0-7]
 
 "**"                { return EXPONENTIATE;}
 ".*"                { return CONVOLUTION;}
+"~"                 { return REVERSE; }
 
 "i8"                { return I8; }
 "i16"               { return I16; }
@@ -138,9 +139,9 @@ OCTAL [0-7]
 {ALPHA}{ALPHANUM}+          { yylval.sval = strdup(yytext); return IDENTIFIER;}
 
 \n                  { return EOL;}
-.                       { 
-                            printf("Unexpected character: '%c' at line %d, column %d\n", 
-                                   yytext[0], yylineno, col_num); 
+.                       {
+                            printf("Unexpected character: '%c' at line %d, column %d\n",
+                                   yytext[0], yylineno, col_num);
                         }
 
 %%
