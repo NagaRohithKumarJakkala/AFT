@@ -231,12 +231,13 @@ statement :
     | return_stmt{
 
     }
-    |BREAK SEMICOLON{
+    | return_stmt SEMICOLON {
 
     }
-    |CONTINUE SEMICOLON{
+    | BREAK SEMICOLON {
 
     }
+    | CONTINUE SEMICOLON {
 
     }
     ;
@@ -317,10 +318,6 @@ repeat_stmt:
 
 return_stmt:
     RETURN expression_list {
-
-    }
-    |
-    RETURN LEFTPAREN expression_list RIGHTPAREN {
 
     }
     | RETURN {
