@@ -80,8 +80,8 @@ OCTAL [0-7]
 "}"                 { return RIGHTBRACE; }
 "("                 { return LEFTPAREN; }
 ")"                 { return RIGHTPAREN; }
-"["                 { return LEFTSQUAREBRACE; }
-"]"                 { return RIGHTSQUAREBRACE; }
+"["                 { return LEFTSQUARE; }
+"]"                 { return RIGHTSQUARE; }
 
 ":"                 { return COLON;}
 ";"                 { return SEMICOLON;}
