@@ -119,7 +119,7 @@ OCTAL [0-7]
 
 "let"               { return LET; }
 "const"             { return CONST; }
-"function"          { return FUNCTION; }
+"fn"          { return FUNCTION; }
 "return"            { return RETURN; }
 "if"                { return IF; }
 "else"              { return ELSE; }
