@@ -65,7 +65,8 @@
 %right EXPONENTIATE
 %right AS
 %right NOT
-%left LEFTPAREN LEFTSQUAREBRACE DOT
+%right UNARY_PLUS UNARY_MINUS REVERSE
+%left LEFTPAREN LEFTSQUARE DOT
 
 %start program
 
@@ -332,6 +333,12 @@ return_stmt:
 
     }
     ;
+
+
+unary_expression:
+    PLUS expression %prec UNARY_PLUS {}
+    | MINUS expression %prec UNARY_MINUS {}
+    | REVERSE expression {}
 
 expression:
     /* empty */  {
