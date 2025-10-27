@@ -40,9 +40,9 @@
 
 %type program
 %type function_decl
-%type statement var_decl assignment if_stmt while_stmt for_stmt repeat_stmt return_stmt
+%type statement let_decl const_decl assignment if_stmt while_stmt for_stmt repeat_stmt return_stmt
 %type statement_list statement_block
-%type expression 
+%type expression
 %type literal vector_literal range_expr
 %type expression_list vector_elements
 %type type primitive_type vector_type
@@ -72,14 +72,11 @@
 %%
 
 program:
-    /* empty */{
-
+    /* empty */ {
     }
-    | program function_decl{
-
+    | program function_decl {
     }
-    | program statement {
-
+    | program const_decl {
     }
     ;
 
@@ -241,17 +238,31 @@ statement :
 
     }
 
-var_decl:
-    LET identifier_list ASSIGN expression_list {
+    }
+    ;
+
+
+
+let_decl:
+    LET IDENTIFIER ASSIGN expression {
 
     }
-    | LET identifier_list COLON type ASSIGN expression_list {
+    | LET IDENTIFIER COLON type ASSIGN expression {
 
     }
-    | LET LEFTPAREN identifier_list RIGHTPAREN expression {
+    | LET LEFTPAREN identifier_list RIGHTPAREN ASSIGN expression_list {
 
     }
-    | CONST identifier_list COLON type ASSIGN expression_list {
+    | LET LEFTPAREN identifier_list RIGHTPAREN COLON LEFTPAREN type_list RIGHTPAREN ASSIGN expression_list {
+
+    }
+    ;
+
+const_decl:
+    CONST IDENTIFIER COLON type ASSIGN expression {
+
+    }
+    | CONST LEFTPAREN identifier_list RIGHTPAREN COLON LEFTPAREN type_list RIGHTPAREN ASSIGN expression_list {
 
     }
     ;
