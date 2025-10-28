@@ -12,6 +12,17 @@
 
 %union {
     char* sval;
+    struct ASTNode* Node;
+    struct Program* program;
+    struct FunctionDecl* function_decl;
+    struct Statement* statement;
+    struct Expression* expression;
+    struct Type* type;
+    struct Parameter* parameter;
+    std::vector<struct Expression*>* expr_list;
+    std::vector<struct Statement*>* stmt_list;
+    std::vector<struct Type*>* type_list;
+    std::vector<struct Parameter*>* param_list;
 }
 
 %token <sval> INTEGER FLOAT COMPLEX IDENTIFIER STRING
@@ -35,17 +46,17 @@
 %token ASSIGN COMMA SEMICOLON COLON DOT
 %token LEFTBRACE RIGHTBRACE LEFTPAREN RIGHTPAREN LEFTSQUARE RIGHTSQUARE
 
-%type program
-%type function_decl
-%type statement let_decl const_decl assignment if_stmt while_stmt for_stmt repeat_stmt return_stmt
-%type statement_list statement_block
-%type expression
-%type literal vector_literal range_expr
-%type expression_list
-%type type primitive_type vector_type
-%type type_list return_type_list
-%type parameter
-%type parameter_list
+%type <program> program
+%type <function_decl> function_decl
+%type <statement> statement let_decl const_decl assignment if_stmt while_stmt for_stmt repeat_stmt return_stmt
+%type <stmt_list> statement_list statement_block
+%type <expression> expression
+%type <expression> literal vector_literal range_expr
+%type <expr_list> expression_list
+%type <type> type primitive_type vector_type
+%type <type_list> type_list return_type_list
+%type <parameter> parameter
+%type <param_list> parameter_list
 
 %nonassoc RETURN
 %left COMMA
