@@ -15,6 +15,7 @@
     struct ASTNode* Node;
     struct Program* program;
     struct FunctionDecl* function_decl;
+    struct StructDecl* struct_decl;
     struct Statement* statement;
     struct Expression* expression;
     struct Type* type;
@@ -35,6 +36,7 @@
 %token I8 I16 I32 I64 I128
 %token U8 U16 U32 U64 U128
 %token F32 F64 C32 C64 BOOL
+%token STR
 
 %token PLUS MINUS MULTIPLY DIVIDE MODULO EXPONENTIATE
 %token EQUALS NOTEQUAL LESSTHAN GREATERTHAN LESSTHANEQUAL GREATERTHANEQUAL
@@ -57,6 +59,7 @@
 %type <type_list> type_list return_type_list
 %type <parameter> parameter
 %type <param_list> parameter_list
+%type <struct_decl> struct_decl
 
 %nonassoc RETURN
 %left COMMA
@@ -209,6 +212,9 @@ primitive_type:
 
     }
     | BOOL {
+
+    }
+    | STR {
 
     }
 

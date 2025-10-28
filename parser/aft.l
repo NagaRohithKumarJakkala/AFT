@@ -8,6 +8,7 @@ int col_num = 0;
 %}
 
 %x COMMENT
+%x STRING
 
 %option yylineno
 
@@ -20,6 +21,10 @@ HEX [0-9a-fA-F]
 BINARY [01]
 OCTAL [0-7]
 
+
+ESCAPE_SEQUENCE \\\\(['"\\ntr0]|x{HEX}{1,2})
+STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
+
 %%
 
 
@@ -31,6 +36,17 @@ OCTAL [0-7]
     "*"                 { /* Skip lone asterisk */ }
     \n                  { /* Skip new line */ }
     <<EOF>>             { printf("Error: Unterminated comment\n"); return 0; }
+}
+
+\"                      { yytext[0]; BEGIN(STRING); yymore(); }
+<STRING>{
+    {STRING_CONTENT}    { yymore(); }
+    \\\"                { yymore(); }
+    \"                  { BEGIN(INITIAL);
+                          yylval.sval = strndup(yytext + 1, yyleng - 2);
+                          return STRING; }
+    \n                  { printf("Error: Unterminated string literal at line %d\n", yylineno); BEGIN(INITIAL); }
+    <<EOF>>             { printf("Error: Unterminated string literal\n"); return 0; }
 }
 
 
@@ -124,6 +140,8 @@ OCTAL [0-7]
 "c64"               { return C64; }
 
 "bool"              { return BOOL; }
+
+"str"               { return STR; }
 
 
 
