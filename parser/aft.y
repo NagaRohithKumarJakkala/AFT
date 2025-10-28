@@ -6,8 +6,8 @@
     extern int yylex();
     extern int yylineno;
     extern char *yytext;
-
     void yyerror(const char*s);
+    Program* ast_root;
 %}
 
 %union {
@@ -85,60 +85,72 @@ program:
     /* empty */ {
     }
     | program function_decl {
+        ast_root->Blocks.push_back(std::make_unique<FunctionDecl>(std::move(*$2)));
     }
     | program const_decl SEMICOLON {
+        ast_root->Blocks.push_back(std::make_unique<ConstDecl>(std::move(*$2)));
     }
     | program struct_decl {
+        ast_root->Blocks.push_back(std::make_unique<StructDecl>(std::move(*$2)));
     }
     ;
 
 struct_decl:
-    STRUCT IDENTIFIER LEFTBRACE RIGHTBRACE {}
-    | STRUCT IDENTIFIER LEFTBRACE parameter_list RIGHTBRACE {}
+    STRUCT IDENTIFIER LEFTBRACE RIGHTBRACE {$$ = new StructDecl($2, {});}
+    | STRUCT IDENTIFIER LEFTBRACE parameter_list RIGHTBRACE {$$ = new StructDecl($2, *$4);}
     ;
 
 function_decl:
     FUNCTION IDENTIFIER LEFTPAREN parameter_list RIGHTPAREN return_type_list statement_block {
+        $$ = new FunctionDecl($2, *$4, *$5, std::move(*$6));
     }
     |
     FUNCTION IDENTIFIER LEFTPAREN RIGHTPAREN return_type_list statement_block {
-
+        $$ = new FunctionDecl($2, {}, *$5, std::move(*$6));
     }
     ;
 
 parameter_list:
     parameter {
-
+$$ = new std::vector<Parameter*>();
+        $$->push_back($1);
     }
     | parameter_list COMMA parameter {
-
+        $$ = $1;
+        $$->push_back($3);
     }
     ;
 
 parameter:
     IDENTIFIER COLON type {
-
+$$ = new Parameter($1, $3);
     }
     ;
 
 return_type_list:
     /* empty */ {
-
+$$ = new std::vector<Type*>();
     }
     | type {
-
+        $$ = new std::vector<Type*>();
+        $$->push_back($1);
     }
     | LEFTPAREN type_list RIGHTPAREN {
-
+        $$ = new std::vector<Type*>();
+        for (auto& type : *$2) {
+            $$->push_back(type);
+        }
     }
     ;
 
 type_list:
     type {
-
+$$ = new std::vector<Type*>();
+        $$->push_back($1);
     }
     | type_list COMMA type {
-
+        $$ = $1;
+        $$->push_back($3);
     }
     ;
 
