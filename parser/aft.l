@@ -38,7 +38,7 @@ STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
     <<EOF>>             { printf("Error: Unterminated comment\n"); return 0; }
 }
 
-\"                      { yytext[0]; BEGIN(STRING); yymore(); }
+\"                      { BEGIN(STRING); yymore(); }
 <STRING>{
     {STRING_CONTENT}    { yymore(); }
     \\\"                { yymore(); }

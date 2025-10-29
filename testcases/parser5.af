@@ -1,0 +1,31 @@
+fn spectral_analysis_example() {
+let fs = 1000.0; // 1 kHz sampling rate
+let duration = 2.0; // 2 seconds
+let num_samples = (fs * duration) as u32;
+// Generate test signal: sum of sinusoids
+let signal: [f64] = [];
+let t = (0..num_samples) as [f64] / fs;
+let s = sin(2.0 * PI * 50.0 * t) // 50 Hz component
++ 0.5 * sin(2.0 * PI * 120.0 * t) // 120 Hz component
++ 0.1 * sin(2.0 * PI * 300.0 * t); // 300 Hz component
+// Compute FFT
+let spectrum = fft(s);
+// Calculate magnitude spectrum
+let magnitude_spectrum = abs(spectrum);
+// Find peaks in spectrum
+let peak_indices = find_peaks(magnitude_spectrum, 0.1);
+for idx in peak_indices {
+let frequency = idx as f64 * fs / len(spectrum) as f64;
+dbg(frequency);
+}
+}
+fn find_peaks(data: [f64], threshold: f64) {
+let peaks: [u32] = [];
+for i in 1..(len(data) - 1) {
+if data[i] > data[i-1] && data[i] > data[i+1] && data[i] > threshold {
+peaks = peaks || [i as u32];
+}
+}
+return peaks;
+}
+17

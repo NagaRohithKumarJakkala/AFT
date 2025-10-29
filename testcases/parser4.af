@@ -1,0 +1,18 @@
+fn lowpass_butterworth(cutoff: f64, sample_rate: f64, signal: [f64]) [f64] {
+let omega = 2.0 * PI * cutoff / sample_rate;
+let cos_omega = cos(omega);
+let sin_omega = sin(omega);
+let alpha = sin_omega / (2.0 * 0.707);
+// Filter coefficients
+let b0 = (1.0 - cos_omega) / 2.0;
+let b1 = 1.0 - cos_omega;
+let b2 = (1.0 - cos_omega) / 2.0;
+let a0 = 1.0 + alpha;
+let a1 = -2.0 * cos_omega;
+let a2 = 1.0 - alpha;
+// Normalize the coefficients.
+let b = [b0, b1, b2] / a0;
+let a = [a0, a1, a2] / a0;
+// Apply the filter.
+return filter(b, a, signal);
+}
