@@ -109,6 +109,11 @@ struct Assignment : public Statement {
     std::vector<ExprPtr> values;
 };
 
+struct ExprStmt : public Statement {
+    ExprPtr expr;
+    explicit ExprStmt(ExprPtr e) : expr(std::move(e)) {}
+};
+
 struct IfStmt : public Statement {
     ExprPtr condition;
     std::unique_ptr<StatementBlock> then_block;
@@ -177,6 +182,11 @@ struct PiLiteral : public LiteralExpr {
     PiLiteral() = default;
 };
 
+struct StringLiteral : public LiteralExpr {
+    std::string value;
+    explicit StringLiteral(std::string v) : value(std::move(v)) {}
+};
+
 struct VectorLiteralExpr : public LiteralExpr {
     std::vector<ExprPtr> elements;
 };
@@ -205,6 +215,12 @@ struct IndexExpression : public Expression {
     ExprPtr object;
     ExprPtr index;
     IndexExpression(ExprPtr o, ExprPtr i) : object(std::move(o)), index(std::move(i)) {}
+};
+
+struct TypeCastExpr : public Expression {
+    ExprPtr expr;
+    TypePtr type;
+    TypeCastExpr(ExprPtr e,TypePtr t) : expr(std::move(e)), type(std::move(t)){}
 };
 
 struct FunctionCallExpr : public Expression {

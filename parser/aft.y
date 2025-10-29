@@ -268,8 +268,7 @@ statement :
 
     }
     | expression SEMICOLON {
-         /* TODO:on hold*/
-
+         $$ = new ExprStmt($1);
     }
     | if_stmt {
         $$ = $1;
@@ -630,7 +629,7 @@ expression:
         $$ = new IndexExpression(ExprPtr($1), ExprPtr($3));
     }
     | expression AS type {
-        /* TODO:on hold*/
+        $$ = new TypeCastExpr(ExprPtr($1),TypePtr($3));
     }
     | literal{
         $$ = $1;
@@ -679,7 +678,7 @@ literal:
         $$ = $1;
     }
     | STRING {
-        /* TODO:onhold*/
+        $$ = new StringLiteral(std::string($1));
     }
     ;
 
