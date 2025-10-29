@@ -90,6 +90,8 @@ struct Statement : public ASTNode {
 
 struct StatementBlock : public Statement {
     std::vector<StmtPtr> statements;
+    StatementBlock() = default; 
+    explicit StatementBlock(std::vector<StmtPtr> t) : statements(std::move(t)) {}
 };
 
 struct LetDecl : public Statement {
@@ -234,11 +236,22 @@ struct FunctionDecl : public ASTNode {
     std::vector<ParameterPtr> params;
     std::vector<TypePtr> return_types;
     std::unique_ptr<StatementBlock> body;
+    FunctionDecl(std::string n,
+                 std::vector<ParameterPtr> p,
+                 std::vector<TypePtr> r,
+                 std::unique_ptr<StatementBlock> b)
+        : name(std::move(n)),
+          params(std::move(p)),
+          return_types(std::move(r)),
+          body(std::move(b)) {}
+
 };
 
 struct StructDecl : public ASTNode {
     std::string name;
     std::vector<ParameterPtr> members;
+    StructDecl(std::string n, std::vector<ParameterPtr> m)
+        : name(std::move(n)), members(std::move(m)) {}
 };
 
 #endif

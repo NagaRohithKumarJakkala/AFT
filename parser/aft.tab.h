@@ -44,6 +44,16 @@
 #if YYDEBUG
 extern int yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 1 "aft.y"
+
+    #include<vector>
+    #include<memory>
+    #include<string>
+    #include "AST.h"
+
+
+#line 57 "aft.tab.h"
 
 /* Token kinds.  */
 #ifndef YYTOKENTYPE
@@ -93,43 +103,44 @@ extern int yydebug;
     C32 = 294,                     /* C32  */
     C64 = 295,                     /* C64  */
     BOOL = 296,                    /* BOOL  */
-    PLUS = 297,                    /* PLUS  */
-    MINUS = 298,                   /* MINUS  */
-    MULTIPLY = 299,                /* MULTIPLY  */
-    DIVIDE = 300,                  /* DIVIDE  */
-    MODULO = 301,                  /* MODULO  */
-    EXPONENTIATE = 302,            /* EXPONENTIATE  */
-    EQUALS = 303,                  /* EQUALS  */
-    NOTEQUAL = 304,                /* NOTEQUAL  */
-    LESSTHAN = 305,                /* LESSTHAN  */
-    GREATERTHAN = 306,             /* GREATERTHAN  */
-    LESSTHANEQUAL = 307,           /* LESSTHANEQUAL  */
-    GREATERTHANEQUAL = 308,        /* GREATERTHANEQUAL  */
-    AND = 309,                     /* AND  */
-    OR = 310,                      /* OR  */
-    XOR = 311,                     /* XOR  */
-    NOT = 312,                     /* NOT  */
-    BITWISEAND = 313,              /* BITWISEAND  */
-    BITWISEOR = 314,               /* BITWISEOR  */
-    LEFTSHIFT = 315,               /* LEFTSHIFT  */
-    RIGHTSHIFT = 316,              /* RIGHTSHIFT  */
-    CONVOLUTION = 317,             /* CONVOLUTION  */
-    REVERSE = 318,                 /* REVERSE  */
-    RANGE = 319,                   /* RANGE  */
-    RANGEUPTO = 320,               /* RANGEUPTO  */
-    ASSIGN = 321,                  /* ASSIGN  */
-    COMMA = 322,                   /* COMMA  */
-    SEMICOLON = 323,               /* SEMICOLON  */
-    COLON = 324,                   /* COLON  */
-    DOT = 325,                     /* DOT  */
-    LEFTBRACE = 326,               /* LEFTBRACE  */
-    RIGHTBRACE = 327,              /* RIGHTBRACE  */
-    LEFTPAREN = 328,               /* LEFTPAREN  */
-    RIGHTPAREN = 329,              /* RIGHTPAREN  */
-    LEFTSQUARE = 330,              /* LEFTSQUARE  */
-    RIGHTSQUARE = 331,             /* RIGHTSQUARE  */
-    UNARY_PLUS = 332,              /* UNARY_PLUS  */
-    UNARY_MINUS = 333              /* UNARY_MINUS  */
+    STR = 297,                     /* STR  */
+    PLUS = 298,                    /* PLUS  */
+    MINUS = 299,                   /* MINUS  */
+    MULTIPLY = 300,                /* MULTIPLY  */
+    DIVIDE = 301,                  /* DIVIDE  */
+    MODULO = 302,                  /* MODULO  */
+    EXPONENTIATE = 303,            /* EXPONENTIATE  */
+    EQUALS = 304,                  /* EQUALS  */
+    NOTEQUAL = 305,                /* NOTEQUAL  */
+    LESSTHAN = 306,                /* LESSTHAN  */
+    GREATERTHAN = 307,             /* GREATERTHAN  */
+    LESSTHANEQUAL = 308,           /* LESSTHANEQUAL  */
+    GREATERTHANEQUAL = 309,        /* GREATERTHANEQUAL  */
+    AND = 310,                     /* AND  */
+    OR = 311,                      /* OR  */
+    XOR = 312,                     /* XOR  */
+    NOT = 313,                     /* NOT  */
+    BITWISEAND = 314,              /* BITWISEAND  */
+    BITWISEOR = 315,               /* BITWISEOR  */
+    LEFTSHIFT = 316,               /* LEFTSHIFT  */
+    RIGHTSHIFT = 317,              /* RIGHTSHIFT  */
+    CONVOLUTION = 318,             /* CONVOLUTION  */
+    REVERSE = 319,                 /* REVERSE  */
+    RANGE = 320,                   /* RANGE  */
+    RANGEUPTO = 321,               /* RANGEUPTO  */
+    ASSIGN = 322,                  /* ASSIGN  */
+    COMMA = 323,                   /* COMMA  */
+    SEMICOLON = 324,               /* SEMICOLON  */
+    COLON = 325,                   /* COLON  */
+    DOT = 326,                     /* DOT  */
+    LEFTBRACE = 327,               /* LEFTBRACE  */
+    RIGHTBRACE = 328,              /* RIGHTBRACE  */
+    LEFTPAREN = 329,               /* LEFTPAREN  */
+    RIGHTPAREN = 330,              /* RIGHTPAREN  */
+    LEFTSQUARE = 331,              /* LEFTSQUARE  */
+    RIGHTSQUARE = 332,             /* RIGHTSQUARE  */
+    UNARY_PLUS = 333,              /* UNARY_PLUS  */
+    UNARY_MINUS = 334              /* UNARY_MINUS  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -138,11 +149,29 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 13 "aft.y"
+#line 24 "aft.y"
 
     char* sval;
+    struct ASTNode* Node;
+    struct Program* program;
+    struct FunctionDecl* function_decl;
+    struct StructDecl* struct_decl;
+    struct LetDecl* let_decl;
+    struct ConstDecl* const_decl;
+    struct Statement* statement;
+    struct IfStmt* if_stmt;
+    struct Expression* expression;
+    struct Type* type;
+    struct StatementBlock* stmt_block;
+    struct Parameter* parameter;
+    struct FunctionCallExpr* function_call;
+    std::vector<struct Expression*>* expr_list;
+    std::vector<struct Statement*>* stmt_list;
+    std::vector<struct Type*>* type_list;
+    std::vector<struct Parameter*>* param_list;
+    std::vector<std::string>* identifier_list;
 
-#line 146 "aft.tab.h"
+#line 175 "aft.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

@@ -1,13 +1,24 @@
+%code requires{
+    #include<vector>
+    #include<memory>
+    #include<string>
+    #include "AST.h"
+
+}
 %{
     #include<stdio.h>
     #include <stdlib.h>
     #include <string.h>
+
+    #include<vector>
+    #include<memory>
+    #include<string>
     #include "AST.h"
     extern int yylex();
     extern int yylineno;
     extern char *yytext;
     void yyerror(const char*s);
-    Program* ast_root;
+    Program* ast_root =new Program();
 %}
 
 %union {
@@ -16,14 +27,20 @@
     struct Program* program;
     struct FunctionDecl* function_decl;
     struct StructDecl* struct_decl;
+    struct LetDecl* let_decl;
+    struct ConstDecl* const_decl;
     struct Statement* statement;
+    struct IfStmt* if_stmt;
     struct Expression* expression;
     struct Type* type;
+    struct StatementBlock* stmt_block;
     struct Parameter* parameter;
+    struct FunctionCallExpr* function_call;
     std::vector<struct Expression*>* expr_list;
     std::vector<struct Statement*>* stmt_list;
     std::vector<struct Type*>* type_list;
     std::vector<struct Parameter*>* param_list;
+    std::vector<std::string>* identifier_list;
 }
 
 %token <sval> INTEGER FLOAT COMPLEX IDENTIFIER STRING
@@ -50,16 +67,22 @@
 
 %type <program> program
 %type <function_decl> function_decl
-%type <statement> statement let_decl const_decl assignment if_stmt while_stmt for_stmt repeat_stmt return_stmt
-%type <stmt_list> statement_list statement_block
-%type <expression> expression
+%type <let_decl> let_decl
+%type <const_decl> const_decl
+%type <statement> statement assignment while_stmt for_stmt repeat_stmt return_stmt
+%type <if_stmt> if_stmt
+%type <stmt_list> statement_list
+%type <stmt_block> statement_block
+%type <expression> expression unary_expression
 %type <expression> literal vector_literal range_expr
-%type <expr_list> expression_list
+%type <expr_list> expression_list argument_list vector_elements
 %type <type> type primitive_type vector_type
 %type <type_list> type_list return_type_list
 %type <parameter> parameter
 %type <param_list> parameter_list
+%type <identifier_list> identifier_list
 %type <struct_decl> struct_decl
+%type <function_call> function_call
 
 %nonassoc RETURN
 %left COMMA
@@ -88,36 +111,56 @@ program:
     /* empty */ {
     }
     | program function_decl {
-        ast_root->Blocks.push_back(std::make_unique<FunctionDecl>(std::move(*$2)));
+        ast_root->Blocks.emplace_back(std::unique_ptr<FunctionDecl>($2));
     }
     | program const_decl SEMICOLON {
-        ast_root->Blocks.push_back(std::make_unique<ConstDecl>(std::move(*$2)));
+        ast_root->Blocks.emplace_back(std::unique_ptr<ConstDecl>($2));
     }
     | program struct_decl {
-        ast_root->Blocks.push_back(std::make_unique<StructDecl>(std::move(*$2)));
+        ast_root->Blocks.emplace_back(std::unique_ptr<StructDecl>($2));
     }
     ;
 
 struct_decl:
-    STRUCT IDENTIFIER LEFTBRACE RIGHTBRACE {$$ = new StructDecl($2, {});}
+    STRUCT IDENTIFIER LEFTBRACE RIGHTBRACE {
+        $$ = new StructDecl($2, {});
+    }
     | STRUCT IDENTIFIER LEFTBRACE parameter_list RIGHTBRACE {
-        $$ = new StructDecl($2, *$4);
+        std::vector<ParameterPtr> members;
+        for (auto* p : *$4)
+        members.push_back(ParameterPtr(p));
+        delete $4;
+
+        $$ = new StructDecl($2, std::move(members));
     }
     ;
 
 function_decl:
     FUNCTION IDENTIFIER LEFTPAREN parameter_list RIGHTPAREN return_type_list statement_block {
-        $$ = new FunctionDecl($2, *$4, *$5, std::move(*$6));
+        std::vector<ParameterPtr> params;
+        for (auto* p : *$4)
+            params.push_back(ParameterPtr(p));
+        delete $4;
+
+        std::vector<TypePtr> rets;
+        for (auto* t : *$6)
+            rets.push_back(TypePtr(t));
+        delete $6;
+        $$ = new FunctionDecl($2, std::move(params), std::move(rets), std::unique_ptr<StatementBlock>($7));
     }
     |
     FUNCTION IDENTIFIER LEFTPAREN RIGHTPAREN return_type_list statement_block {
-        $$ = new FunctionDecl($2, {}, *$5, std::move(*$6));
+        std::vector<TypePtr> rets;
+        for (auto* t : *$5) rets.emplace_back(TypePtr(t));
+        delete $5;
+ 
+        $$ = new FunctionDecl($2, {}, std::move(rets), std::unique_ptr<StatementBlock>($6));
     }
     ;
 
 parameter_list:
     parameter {
-$$ = new std::vector<Parameter*>();
+        $$ = new std::vector<Parameter*>();
         $$->push_back($1);
     }
     | parameter_list COMMA parameter {
@@ -128,7 +171,7 @@ $$ = new std::vector<Parameter*>();
 
 parameter:
     IDENTIFIER COLON type {
-        $$ = new Parameter($1, $3);
+        $$ = new Parameter($1, std::unique_ptr<Type>($3));
     }
     ;
 
@@ -142,7 +185,7 @@ return_type_list:
     }
     | LEFTPAREN type_list RIGHTPAREN {
         $$ = new std::vector<Type*>();
-        for (auto& type : *$2) {
+        for (auto* type : *$2) {
             $$->push_back(type);
         }
     }
@@ -233,7 +276,7 @@ statement_block:
     LEFTBRACE statement_list RIGHTBRACE {
         $$ = new StatementBlock();
         if ($2) {
-            for (auto s : *$2) {
+            for (auto* s : *$2) {
                 $$->statements.push_back(std::unique_ptr<Statement>(s));
             }
             delete $2;
@@ -268,7 +311,7 @@ statement :
 
     }
     | expression SEMICOLON {
-         $$ = new ExprStmt($1);
+         $$ = new ExprStmt(ExprPtr($1));
     }
     | if_stmt {
         $$ = $1;
@@ -304,7 +347,7 @@ let_decl:
         LetDecl* node = new LetDecl();
         node->names.push_back(std::string($2));
         free($2);
-        node->types = {};
+        node->types.clear();
         node->values.push_back(ExprPtr($4));
         $$ = node;
     }
@@ -318,41 +361,39 @@ let_decl:
     }
     | LET LEFTPAREN identifier_list RIGHTPAREN ASSIGN LEFTPAREN expression_list RIGHTPAREN {
         LetDecl* node = new LetDecl();
-        if ($2) {
-            for (auto name : *$2) {
-                node->names.push_back(std::string(name));
-                free(name);
+        if ($3) {
+            for (auto name : *$3) {
+                node->names.push_back(name);
             }
-            delete $2;
+            delete $3;
         }
-        if ($6) {
-            for (auto e : *$6) {
+        if ($7) {
+            for (auto* e : *$7) {
                 node->values.push_back(ExprPtr(e));
             }
-            delete $6;
+            delete $7;
         }
         $$ = node;
     }
     | LET LEFTPAREN identifier_list RIGHTPAREN COLON LEFTPAREN type_list RIGHTPAREN ASSIGN LEFTPAREN expression_list RIGHTPAREN {
         LetDecl* node = new LetDecl();
-        if ($2) {
-            for (auto name : *$2) {
-                node->names.push_back(std::string(name));
-                free(name);
+        if ($3) {
+            for (auto name : *$3) {
+                node->names.push_back(name);
             }
-            delete $2;
+            delete $3;
         }
-        if ($6) {
-            for (auto t : *$6) {
+        if ($7) {
+            for (auto* t : *$7) {
                 node->types.push_back(TypePtr(t));
             }
-            delete $6;
+            delete $7;
         }
-        if ($10) {
-            for (auto e : *$10) {
+        if ($11) {
+            for (auto* e : *$11) {
                 node->values.push_back(ExprPtr(e));
             }
-            delete $10;
+            delete $11;
         }
         $$ = node;
     }
@@ -369,24 +410,24 @@ const_decl:
 
     }
     | CONST LEFTPAREN identifier_list RIGHTPAREN COLON LEFTPAREN type_list RIGHTPAREN ASSIGN LEFTPAREN expression_list RIGHTPAREN {
-        if ($2) {
-            for (auto name : *$2) {
-                node->names.push_back(std::string(name));
-                free(name);
+        ConstDecl* node = new ConstDecl();
+        if ($3) {
+            for (auto name : *$3) {
+                node->names.push_back(name);
             }
-            delete $2;
+            delete $3;
         }
-        if ($6) {
-            for (auto t : *$6) {
+        if ($7) {
+            for (auto* t : *$7) {
                 node->types.push_back(TypePtr(t));
             }
-            delete $6;
+            delete $7;
         }
-        if ($10) {
-            for (auto e : *$10) {
+        if ($11) {
+            for (auto* e : *$11) {
                 node->values.push_back(ExprPtr(e));
             }
-            delete $10;
+            delete $11;
         }
         $$ = node;
     }
@@ -420,13 +461,12 @@ assignment:
         Assignment* node = new Assignment();
         if ($2) {
             for (auto name : *$2) {
-                node->targets.push_back(std::string(name));
-                free(name);
+                node->targets.push_back(name);
             }
             delete $2;
         }
         if ($6) {
-            for (auto e : *$6) {
+            for (auto* e : *$6) {
                 node->values.push_back(ExprPtr(e));
             }
             delete $6;
@@ -458,7 +498,7 @@ if_stmt:
         node->condition = ExprPtr($2);
         node->then_block = std::unique_ptr<StatementBlock>($3);
         node->else_block = std::nullopt;
-        node->else_if = std::optional<std::unique_ptr<IfStmt>>(std::unique_ptr<IfStmt>($5));
+        node->else_if = std::make_optional<std::unique_ptr<IfStmt>>(std::unique_ptr<IfStmt>($5));
         $$ = node;
     }
     ;
@@ -496,7 +536,7 @@ return_stmt:
     RETURN expression_list {
         ReturnStmt* node = new ReturnStmt();
         if ($2) {
-            for (auto e : *$2) {
+            for (auto* e : *$2) {
                 node->values.push_back(ExprPtr(e));
             }
             delete $2;
