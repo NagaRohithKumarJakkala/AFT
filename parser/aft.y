@@ -774,6 +774,8 @@ int main(int argc, char** argv) {
 
     yyparse();
 
+    ast_root->print();
+
     return 0;
 }
 
