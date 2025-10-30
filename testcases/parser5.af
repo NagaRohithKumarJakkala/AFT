@@ -28,4 +28,3 @@ peaks = peaks || [i as u32];
 }
 return peaks;
 }
-17

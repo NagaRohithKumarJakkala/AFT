@@ -51,7 +51,7 @@ enum class UnaryOp {
 
 struct ASTNode{
     virtual ~ASTNode() = default;
-    virtual void print();
+    virtual void print(int level);
 };
 
 
@@ -59,7 +59,7 @@ struct ASTNode{
 
 struct Program : public ASTNode {
     std::vector<std::unique_ptr<ASTNode>> Blocks;
-    void print() override;
+    void print(int level) override;
 
 };
 
@@ -70,28 +70,28 @@ struct Type: public ASTNode{
 struct PrimitiveType: public Type{
     PrimitiveTypeEnum type;
     PrimitiveType(PrimitiveTypeEnum t):type(t){}
-    void print() override;
+    void print(int level) override;
 };
 
 
 struct VectorType : public Type {
     TypePtr element_type;
     VectorType(TypePtr elem) : element_type(std::move(elem)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 
 struct StructType : public Type {
     std::string name;
     explicit StructType(std::string n) : name(std::move(n)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct Parameter : public ASTNode {
     std::string name;
     TypePtr type;
     Parameter(std::string n, TypePtr t) : name(std::move(n)), type(std::move(t)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct Statement : public ASTNode {
@@ -102,33 +102,33 @@ struct StatementBlock : public Statement {
     std::vector<StmtPtr> statements;
     StatementBlock() = default; 
     explicit StatementBlock(std::vector<StmtPtr> t) : statements(std::move(t)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct LetDecl : public Statement {
     std::vector<std::string> names;
     std::vector<TypePtr> types;
     std::vector<ExprPtr> values;
-    void print() override;
+    void print(int level) override;
 };
 
 struct ConstDecl : public Statement {
     std::vector<std::string> names;
     std::vector<TypePtr> types;
     std::vector<ExprPtr> values;
-    void print() override;
+    void print(int level) override;
 };
 
 struct Assignment : public Statement {
     std::vector<std::string> targets;
     std::vector<ExprPtr> values;
-    void print() override;
+    void print(int level) override;
 };
 
 struct ExprStmt : public Statement {
     ExprPtr expr;
     explicit ExprStmt(ExprPtr e) : expr(std::move(e)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct IfStmt : public Statement {
@@ -136,39 +136,39 @@ struct IfStmt : public Statement {
     std::unique_ptr<StatementBlock> then_block;
     std::optional<std::unique_ptr<StatementBlock>> else_block;
     std::optional<std::unique_ptr<IfStmt>> else_if;
-    void print() override;
+    void print(int level) override;
 };
 
 struct WhileStmt : public Statement {
     ExprPtr condition;
     std::unique_ptr<StatementBlock> body;
-    void print() override;
+    void print(int level) override;
 };
 
 struct ForStmt : public Statement {
     std::string iterator;
     ExprPtr iterable;
     std::unique_ptr<StatementBlock> body;
-    void print() override;
+    void print(int level) override;
 };
 
 struct RepeatStmt : public Statement {
     ExprPtr count;
     std::unique_ptr<StatementBlock> body;
-    void print() override;
+    void print(int level) override;
 };
 
 struct ReturnStmt : public Statement {
     std::vector<ExprPtr> values;
-    void print() override;
+    void print(int level) override;
 };
 
 struct BreakStmt : public Statement {
-    void print() override;
+    void print(int level) override;
 };
 
 struct ContinueStmt : public Statement {
-    void print() override;
+    void print(int level) override;
 
 };
 
@@ -179,7 +179,7 @@ struct Expression : public ASTNode {
 struct IdentifierExpr : public Expression {
     std::string name;
     explicit IdentifierExpr(std::string n) : name(std::move(n)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct LiteralExpr : public Expression {
@@ -189,41 +189,41 @@ struct LiteralExpr : public Expression {
 struct IntegerLiteral : public LiteralExpr {
     std::string text;
     IntegerLiteral(std::string t) : text(std::move(t)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct FloatLiteral : public LiteralExpr {
     std::string text;
     FloatLiteral(std::string t) : text(std::move(t)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct ComplexLiteral : public LiteralExpr {
     std::string text;
     ComplexLiteral(std::string t) : text(std::move(t)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct BoolLiteral : public LiteralExpr {
     bool value;
     BoolLiteral(bool v) : value(v) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct PiLiteral : public LiteralExpr {
     PiLiteral() = default;
-    void print() override;
+    void print(int level) override;
 };
 
 struct StringLiteral : public LiteralExpr {
     std::string value;
     explicit StringLiteral(std::string v) : value(std::move(v)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct VectorLiteralExpr : public LiteralExpr {
     std::vector<ExprPtr> elements;
-    void print() override;
+    void print(int level) override;
 };
 
 struct RangeExpr : public Expression {
@@ -231,14 +231,14 @@ struct RangeExpr : public Expression {
     ExprPtr right;
     bool inclusive = false;
     RangeExpr(ExprPtr l, ExprPtr r, bool inc) : left(std::move(l)), right(std::move(r)), inclusive(inc) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct UnaryExpression : public Expression {
     UnaryOp op;
     ExprPtr operand;
     UnaryExpression(UnaryOp o, ExprPtr e) : op(o), operand(std::move(e)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct BinaryExpression : public Expression {
@@ -246,28 +246,28 @@ struct BinaryExpression : public Expression {
     ExprPtr left;
     ExprPtr right;
     BinaryExpression(BinaryOp o, ExprPtr l, ExprPtr r) : op(o), left(std::move(l)), right(std::move(r)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct IndexExpression : public Expression {
     ExprPtr object;
     ExprPtr index;
     IndexExpression(ExprPtr o, ExprPtr i) : object(std::move(o)), index(std::move(i)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct TypeCastExpr : public Expression {
     ExprPtr expr;
     TypePtr type;
     TypeCastExpr(ExprPtr e,TypePtr t) : expr(std::move(e)), type(std::move(t)){}
-    void print() override;
+    void print(int level) override;
 };
 
 struct FunctionCallExpr : public Expression {
     std::string callee;
     std::vector<ExprPtr> arguments;
     FunctionCallExpr(std::string c, std::vector<ExprPtr> args) : callee(std::move(c)), arguments(std::move(args)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 struct FunctionDecl : public ASTNode {
@@ -283,7 +283,7 @@ struct FunctionDecl : public ASTNode {
           params(std::move(p)),
           return_types(std::move(r)),
           body(std::move(b)) {}
-    void print() override;
+    void print(int level) override;
 
 };
 
@@ -292,7 +292,7 @@ struct StructDecl : public ASTNode {
     std::vector<ParameterPtr> members;
     StructDecl(std::string n, std::vector<ParameterPtr> m)
         : name(std::move(n)), members(std::move(m)) {}
-    void print() override;
+    void print(int level) override;
 };
 
 #endif

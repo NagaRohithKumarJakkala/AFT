@@ -2,7 +2,7 @@
     #include<vector>
     #include<memory>
     #include<string>
-    #include "AST.h"
+    #include "../AST_gen/AST.h"
 
 }
 %{
@@ -13,7 +13,7 @@
     #include<vector>
     #include<memory>
     #include<string>
-    #include "AST.h"
+    #include "../AST_gen/AST.h"
     extern int yylex();
     extern int yylineno;
     extern char *yytext;
@@ -774,7 +774,7 @@ int main(int argc, char** argv) {
 
     yyparse();
 
-    ast_root->print();
+    ast_root->print(0);
 
     return 0;
 }
