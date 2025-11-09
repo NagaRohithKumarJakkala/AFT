@@ -28,6 +28,11 @@ Symbol* SymbolTable::find(const std::string& name){
 }
 
 
+SymbolTable& SemanticAnalyzer::get_symbol_table(){
+    return sym_table;
+}
+
+
 void SemanticAnalyzer::handleNode(ASTNode* node){
     if( auto func_decl = dynamic_cast<FunctionDecl*>(node)){
         handleFunction(func_decl);

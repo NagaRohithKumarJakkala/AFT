@@ -44,6 +44,7 @@ class SemanticAnalyzer{
 
 public:
     void check(Program* program);
+    SymbolTable& get_symbol_table();
 };
 
 #endif
