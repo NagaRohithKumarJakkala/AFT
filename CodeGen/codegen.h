@@ -29,6 +29,7 @@ struct CodeGen{
     void push_scope();
     void pop_scope();
     void bind_var(const string&name,AllocaInst* A);
+    AllocaInst* lookup_var(const std::string &name);
     unordered_map<string,Function*> functions;
     unordered_map<string,llvm::StructType*> structs;
 };

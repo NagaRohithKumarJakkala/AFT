@@ -44,7 +44,8 @@ llvm::Type* CodeGen::prim_to_LLVM( PrimitiveTypeEnum p){
         // TODO:: do for the STR differently
     
         //case PrimitiveTypeEnum::STR: return llvm::Type::getInt8PtrTy(ctx);
-        case PrimitiveTypeEnum::STR: return nullptr;
+        case PrimitiveTypeEnum::STR: return llvm::PointerType::get(ctx,0);
+
 }
 return nullptr;
 }
@@ -58,12 +59,330 @@ Value* CodeGen::boolToI1(IRBuilder<> &B, Value *v) {
 }
 
 Value* CodeGen::gen_expr(const Expression* e) {
+    // creating gen_expr for each ExprAst
+    if (!e) return nullptr;
+    if (auto *id = dynamic_cast<const IdentifierExpr*>(e)) {
+        if (auto *A = lookup_var(id->name)) {
+            return builder.CreateLoad(A->getAllocatedType(), A, id->name.c_str());
+        }
+        return nullptr;
+    }
+    if (auto *litI = dynamic_cast<const IntegerLiteral*>(e)) {
+        long long v = std::stoll(litI->text);
+        return ConstantInt::get(llvm::Type::getInt64Ty(ctx), v, true);
+    }
+    if (auto *litF = dynamic_cast<const FloatLiteral*>(e)) {
+        double v = std::stod(litF->text);
+        return ConstantFP::get(llvm::Type::getDoubleTy(ctx), v);
+    }
+    if (auto *litB = dynamic_cast<const BoolLiteral*>(e)) {
+        return ConstantInt::get(llvm::Type::getInt1Ty(ctx), litB->value);
+    }
+    if (dynamic_cast<const PiLiteral*>(e)) {
+        return ConstantFP::get(llvm::Type::getDoubleTy(ctx), 3.141592653589793);
+    }
+    if (auto *str = dynamic_cast<const ::StringLiteral*>(e)){
+        return builder.CreateGlobalString(str->value);
+    }
+    if (auto *un = dynamic_cast<const UnaryExpression*>(e)) {
+        Value *v = gen_expr(un->operand.get()); 
+        if (!v) return nullptr;
+        switch (un->op) {
+            case UnaryOp::PLUS: return v;
+            case UnaryOp::MINUS: return v->getType()->isFloatingPointTy() ? builder.CreateFNeg(v) : builder.CreateNeg(v);
+            case UnaryOp::NOT: { Value *b = boolToI1(builder, v); return builder.CreateNot(b); }
+            default: return v;
+        }
+    }
+    if (auto *bin = dynamic_cast<const BinaryExpression*>(e)) {
+        Value *L = gen_expr(bin->left.get());
+        Value *R = gen_expr(bin->right.get());
+        if (!L||!R){
+            return nullptr;
+        }
+        bool fp = L->getType()->isFloatingPointTy() || R->getType()->isFloatingPointTy();
+        if (fp) {
+            if (!L->getType()->isFloatingPointTy())
+                L = builder.CreateSIToFP(L, llvm::Type::getDoubleTy(ctx));
+            if (!R->getType()->isFloatingPointTy())
+                R = builder.CreateSIToFP(R, llvm::Type::getDoubleTy(ctx));
+        }
+        switch (bin->op) {
+            case BinaryOp::PLUS: return fp ? builder.CreateFAdd(L,R) : builder.CreateAdd(L,R);
+            case BinaryOp::MINUS: return fp ? builder.CreateFSub(L,R) : builder.CreateSub(L,R);
+            case BinaryOp::MULTIPLY: return fp ? builder.CreateFMul(L,R) : builder.CreateMul(L,R);
+            case BinaryOp::DIVIDE: return fp ? builder.CreateFDiv(L,R) : builder.CreateSDiv(L,R);
+            case BinaryOp::MODULO: return fp ? nullptr : builder.CreateSRem(L,R);
+            case BinaryOp::EQUALS: return fp ? builder.CreateFCmpOEQ(L,R) : builder.CreateICmpEQ(L,R);
+            case BinaryOp::NOTEQUAL: return fp ? builder.CreateFCmpONE(L,R) : builder.CreateICmpNE(L,R);
+            case BinaryOp::LESSTHAN: return fp ? builder.CreateFCmpOLT(L,R) : builder.CreateICmpSLT(L,R);
+            case BinaryOp::GREATERTHAN: return fp ? builder.CreateFCmpOGT(L,R) : builder.CreateICmpSGT(L,R);
+            case BinaryOp::LESSTHANEQUAL: return fp ? builder.CreateFCmpOLE(L,R) : builder.CreateICmpSLE(L,R);
+            case BinaryOp::GREATERTHANEQUAL: return fp ? builder.CreateFCmpOGE(L,R) : builder.CreateICmpSGE(L,R);
+            case BinaryOp::AND: return builder.CreateAnd(boolToI1(builder,L), boolToI1(builder,R));
+            case BinaryOp::OR: return builder.CreateOr(boolToI1(builder,L), boolToI1(builder,R));
+            case BinaryOp::XOR: return builder.CreateXor(L,R);
+            case BinaryOp::BITWISEAND: return builder.CreateAnd(L,R);
+            case BinaryOp::BITWISEOR: return builder.CreateOr(L,R);
+            case BinaryOp::LEFTSHIFT: return builder.CreateShl(L,R);
+            case BinaryOp::RIGHTSHIFT: return builder.CreateAShr(L,R);
+            default: return nullptr;
+        }
+    }
+    if (auto *idx = dynamic_cast<const IndexExpression*>(e)) {
+        Value *base = gen_expr(idx->object.get());
+        Value *i = gen_expr(idx->index.get());
+        if (!base||!i) return nullptr;
+        if (base->getType()->isPointerTy()) {
+            llvm::Type *elem = llvm::cast<llvm::PointerType>(base->getType());
+            Value *ptr = builder.CreateInBoundsGEP(elem, base, i);
+            return builder.CreateLoad(elem, ptr);
+        }
+        return nullptr;
+    }
+    if (auto *cast = dynamic_cast<const TypeCastExpr*>(e)) {
+        Value *v = gen_expr(cast->expr.get()); 
+        llvm::Type *dst = lower_type(cast->type.get());
+        if (!v||!dst) return nullptr;
+        llvm::Type *src = v->getType();
+        if (src == dst) return v;
+        if (src->isIntegerTy() && dst->isIntegerTy()) 
+            return builder.CreateIntCast(v, dst, true);
+        if (src->isIntegerTy() && dst->isFloatingPointTy()) 
+            return builder.CreateSIToFP(v, dst);
+        if (src->isFloatingPointTy() && dst->isIntegerTy())
+            return builder.CreateFPToSI(v, dst);
+        if (src->isFloatingPointTy() && dst->isFloatingPointTy()) 
+            return builder.CreateFPCast(v, dst);
+        return nullptr;
+    }
+    if (auto *call = dynamic_cast<const FunctionCallExpr*>(e)) {
+        auto it = functions.find(call->callee);
+        if (it == functions.end()) return nullptr;
+        Function *F = it->second; vector<Value*> argsV;
+        for (auto &a : call->arguments){
+            argsV.push_back(gen_expr(a.get()));
+        }
+
+        if (std::any_of(argsV.begin(), argsV.end(), [](Value* v){
+            return v==nullptr;
+        }))
+            return nullptr;
+        return builder.CreateCall(F, argsV, F->getReturnType()->isVoidTy()? "" : "calltmp");
+    }
+    if (auto *vec = dynamic_cast<const VectorLiteralExpr*>(e)) {
+        if (vec->elements.empty()) {
+            return ConstantPointerNull::get(llvm::PointerType::get(ctx,0));
+        }
+        Value *first = gen_expr(vec->elements[0].get());
+        llvm::Type *elemTy = first->getType(); 
+        size_t n = vec->elements.size();
+        llvm::Type *arrTy = ArrayType::get(elemTy, n);
+        Function *curF = builder.GetInsertBlock()->getParent();
+        AllocaInst *tmp = createEntryAlloca(curF, arrTy, "vec.lit");
+        for (size_t i=0;i<n;++i) {
+            Value *vi = gen_expr(vec->elements[i].get()); 
+            Value *idxs[] = {ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0),
+                                ConstantInt::get(llvm::Type::getInt32Ty(ctx), 
+                                (uint32_t)i)};
+            Value *ptr = builder.CreateInBoundsGEP(arrTy, tmp, idxs);
+            builder.CreateStore(vi, ptr);
+        }
+        Value *zero = ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0);
+        Value *ptr0 = builder.CreateInBoundsGEP(arrTy, tmp, {zero, zero});
+        return ptr0;
+    }
+    if (auto *rng = dynamic_cast<const RangeExpr*>(e)) {
+        llvm::StructType *RT = llvm::StructType::get(ctx,
+                                                     {llvm::Type::getInt64Ty(ctx),
+                                                        llvm::Type::getInt64Ty(ctx),
+                                                     llvm::Type::getInt1Ty(ctx)});
+        Value *start = gen_expr(rng->left.get());
+        Value *end = gen_expr(rng->right.get());
+        if (!start||!end)
+            return nullptr;
+        if (!start->getType()->isIntegerTy()) 
+            start = builder.CreateFPToSI(start, llvm::Type::getInt64Ty(ctx));
+        if (!end->getType()->isIntegerTy())
+            end = builder.CreateFPToSI(end, llvm::Type::getInt64Ty(ctx));
+        Value *incl = ConstantInt::get(llvm::Type::getInt1Ty(ctx), rng->inclusive);
+        Value *aggUndef = UndefValue::get(RT);
+        aggUndef = builder.CreateInsertValue(aggUndef, start, {0});
+        aggUndef = builder.CreateInsertValue(aggUndef, end,   {1});
+        aggUndef = builder.CreateInsertValue(aggUndef, incl,  {2});
+        return aggUndef;
+    }
     return nullptr;
 }
 
 
-void gen_stmt(const Statement* s,Function* fn){
+void CodeGen::gen_stmt(const Statement* s,Function* fn){
+    if (auto *blk = dynamic_cast<const StatementBlock*>(s)) {
+        gen_block(blk, fn);
+        return;
+    }
+    if (auto *let = dynamic_cast<const LetDecl*>(s)) {
+        for (size_t i=0;i<let->names.size();++i) {
+            const std::string &nm = let->names[i];
+            llvm::Type *ty = nullptr; 
+            Value *initV = nullptr;
+            if (let->types.size()>i) ty = lower_type(let->types[i].get());
+            if (let->values.size()>i) initV = gen_expr(let->values[i].get());
+            if (!ty) ty = initV? initV->getType(): llvm::Type::getInt64Ty(ctx);
+            AllocaInst *A = createEntryAlloca(fn, ty, nm);
+            bind_var(nm, A);
+            if (initV) {
+                if (initV->getType() != ty) {
+                    if (initV->getType()->isIntegerTy() && ty->isFloatingPointTy()) 
+                        initV = builder.CreateSIToFP(initV, ty);
+                    else if (initV->getType()->isFloatingPointTy() && ty->isIntegerTy())
+                        initV = builder.CreateFPToSI(initV, ty);
+                }
+                builder.CreateStore(initV, A);
+            }
+        }
+        return;
+    }
+    if (auto *cnst = dynamic_cast<const ConstDecl*>(s)) {
+        for (size_t i=0;i<cnst->names.size();++i) {
+            const std::string &nm = cnst->names[i];
+            llvm::Type *ty = nullptr; 
+            Value *initV = nullptr;
+            if (cnst->types.size()>i) ty = lower_type(cnst->types[i].get());
+            if (cnst->values.size()>i) initV = gen_expr(cnst->values[i].get());
+            if (!initV) continue;
+            if (!ty) ty = initV->getType();
+            AllocaInst *A = createEntryAlloca(fn, ty, nm); 
+            builder.CreateStore(initV, A);
+            bind_var(nm, A);
+        }
+        return;
+    }
+    if (auto *asgn = dynamic_cast<const Assignment*>(s)) { 
+        for (size_t i=0;i<asgn->targets.size();++i) { 
+            auto *A = lookup_var(asgn->targets[i]); 
+            Value *rhs = gen_expr(asgn->values[i].get()); 
+            if (!A || !rhs) continue;
+            if (rhs->getType() != A->getAllocatedType()) {
+                if (rhs->getType()->isIntegerTy() &&
+                    A->getAllocatedType()->isFloatingPointTy()) 
+                    rhs = builder.CreateSIToFP(rhs, A->getAllocatedType());
+                else if (rhs->getType()->isFloatingPointTy() &&
+                        A->getAllocatedType()->isIntegerTy())
+                    rhs = builder.CreateFPToSI(rhs, A->getAllocatedType());
+            }
+            builder.CreateStore(rhs, A); 
+        } 
+        return;
+    }
+    if (auto *es = dynamic_cast<const ExprStmt*>(s)) {
+        gen_expr(es->expr.get());
+        return; 
+    }
+    if (auto *ifs = dynamic_cast<const IfStmt*>(s)) {
+        Value *cond = gen_expr(ifs->condition.get());
+        cond = boolToI1(builder, cond);
+        Function *curF = builder.GetInsertBlock()->getParent();
+        BasicBlock *ThenBB = BasicBlock::Create(ctx, "then", curF); 
+        BasicBlock *ElseBB = BasicBlock::Create(ctx, "else",curF);
+        BasicBlock *MergeBB = BasicBlock::Create(ctx, "ifend",curF); 
+        builder.CreateCondBr(cond, ThenBB, ElseBB);
+        builder.SetInsertPoint(ThenBB);
+        push_scope();
+        gen_block(ifs->then_block.get(), curF);
+        pop_scope();
+        if (!builder.GetInsertBlock()->getTerminator())
+            builder.CreateBr(MergeBB);
 
+        builder.SetInsertPoint(ElseBB);
+
+        if (ifs->else_if.has_value() && ifs->else_if.value()) {
+            gen_stmt(ifs->else_if.value().get(), curF);
+        }
+        else if (ifs->else_block.has_value() && ifs->else_block.value()) {
+            push_scope();
+            gen_block(ifs->else_block.value().get(), curF);
+            pop_scope();
+        }
+
+        if (!builder.GetInsertBlock()->getTerminator())
+            builder.CreateBr(MergeBB);
+
+        builder.SetInsertPoint(MergeBB);
+        return;
+    }
+    if (auto *wh = dynamic_cast<const WhileStmt*>(s)) {
+        Function *curF = builder.GetInsertBlock()->getParent();
+        BasicBlock *CondBB = BasicBlock::Create(ctx, "while.cond", curF); 
+        BasicBlock *BodyBB = BasicBlock::Create(ctx, "while.body",curF); 
+        BasicBlock *EndBB  = BasicBlock::Create(ctx, "while.end",curF); 
+
+        builder.CreateBr(CondBB); 
+
+        builder.SetInsertPoint(CondBB); 
+        Value *cond = gen_expr(wh->condition.get()); 
+        cond = boolToI1(builder, cond); 
+        builder.CreateCondBr(cond, BodyBB, EndBB); 
+
+        builder.SetInsertPoint(BodyBB);
+        push_scope(); 
+        gen_block(wh->body.get(), curF); 
+        pop_scope(); 
+        if (!builder.GetInsertBlock()->getTerminator()) 
+            builder.CreateBr(CondBB); 
+
+        builder.SetInsertPoint(EndBB);
+        return;
+    }
+    if (auto *ret = dynamic_cast<const ReturnStmt*>(s)) {
+        if (ret->values.empty()) { 
+            builder.CreateRetVoid(); 
+            return;
+        }
+        Value *v = gen_expr(ret->values[0].get()); 
+        builder.CreateRet(v); return; 
+    }
+    if (auto *fr = dynamic_cast<const ForStmt*>(s)) {
+        auto *rng = dynamic_cast<const RangeExpr*>(fr->iterable.get()); 
+        if (!rng) return; 
+        Function *curF = builder.GetInsertBlock()->getParent(); 
+        BasicBlock *CondBB = BasicBlock::Create(ctx, "for.cond", curF); 
+        BasicBlock *BodyBB = BasicBlock::Create(ctx, "for.body",curF); 
+        BasicBlock *StepBB = BasicBlock::Create(ctx, "for.step",curF); 
+        BasicBlock *EndBB  = BasicBlock::Create(ctx, "for.end",curF); 
+
+        Value *rngVal = gen_expr(fr->iterable.get()); 
+        Value *start = builder.CreateExtractValue(rngVal, {0}); 
+        Value *end   = builder.CreateExtractValue(rngVal, {1});
+        Value *incl  = builder.CreateExtractValue(rngVal, {2}); 
+
+        AllocaInst *iAlloca = createEntryAlloca(curF, llvm::Type::getInt64Ty(ctx), fr->iterator); 
+        bind_var(fr->iterator, iAlloca); 
+        builder.CreateStore(start, iAlloca);
+
+        builder.CreateBr(CondBB); 
+
+        builder.SetInsertPoint(CondBB); 
+        Value *iVal = builder.CreateLoad(llvm::Type::getInt64Ty(ctx), iAlloca); 
+        Value *cmp  = builder.CreateICmpSLE(iVal, end); 
+        builder.CreateCondBr(cmp, BodyBB, EndBB); 
+
+        builder.SetInsertPoint(BodyBB);
+        push_scope(); 
+        gen_block(fr->body.get(), curF); 
+        pop_scope(); 
+        if (!builder.GetInsertBlock()->getTerminator()) 
+            builder.CreateBr(StepBB); 
+
+        builder.SetInsertPoint(StepBB); 
+        iVal = builder.CreateLoad(llvm::Type::getInt64Ty(ctx), iAlloca); 
+        Value *inc = builder.CreateAdd(iVal, ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1));
+        builder.CreateStore(inc, iAlloca); 
+        builder.CreateBr(CondBB); 
+
+        builder.SetInsertPoint(EndBB);
+        return; 
+    }
 }
 void gen_block(const StatementBlock* block, Function* fn){
 
@@ -80,4 +399,16 @@ void define_function(const FunctionDecl* funcDecl){
 void gen_program(const Program* prog){
 
 }
+
+AllocaInst* CodeGen::lookup_var(const std::string &name) {
+    for (auto it = varScopes.rbegin(); it != varScopes.rend(); ++it) {
+        auto f = it->find(name);
+        if (f != it->end()) return f->second;
+        }
+        Symbol* s = sym_table.find(name);
+        //if (s && s->irValue) return dyn_cast<AllocaInst>(s->irValue);
+        //TODO: handle it later
+        return nullptr;
+}
+
 
