@@ -38,6 +38,7 @@ STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
     <<EOF>>             { printf("Error: Unterminated comment\n"); return 0; }
 }
 
+
 \"                      { BEGIN(STRING); yymore(); }
 <STRING>{
     {STRING_CONTENT}    { yymore(); }
@@ -50,21 +51,11 @@ STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
 }
 
 
+
 ".."                { return RANGE; }
 "..="               { return RANGEUPTO; }
 
-{DIGIT}+"." {
-    char c = yyinput();
-    unput(c);
-    if (c == '.') {
-        yyless(yyleng - 1);
-        yylval.sval = strndup(yytext, yyleng - 1);
-        return INTEGER;
-    }
-    yylval.sval = strdup(yytext);
-    return FLOAT;
-}
-{DIGIT}+"."{DIGIT}+{EXPONENT}? { yylval.sval = strdup(yytext); return FLOAT; }
+{DIGIT}+"."{DIGIT}*{EXPONENT}? { yylval.sval = strdup(yytext); return FLOAT; }
 "."{DIGIT}+{EXPONENT}?              { yylval.sval = strdup(yytext); return FLOAT; }
 {DIGIT}+{EXPONENT}                  { yylval.sval = strdup(yytext); return FLOAT; }
 
