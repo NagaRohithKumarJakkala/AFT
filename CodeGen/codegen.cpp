@@ -384,10 +384,26 @@ void CodeGen::gen_stmt(const Statement* s,Function* fn){
         return; 
     }
 }
-void gen_block(const StatementBlock* block, Function* fn){
-
+void CodeGen::gen_block(const StatementBlock* block, Function* fn){
+ for (auto &sp : block->statements) {
+    gen_stmt(sp.get(), fn);
+    if (builder.GetInsertBlock()->getTerminator())
+        break;
+    } 
 }
-void register_struct(StructDecl* structDecl){
+void CodeGen::register_struct(StructDecl* structDecl){
+ auto it = structs.find(structDecl->name);
+    llvm::StructType *ST; 
+    if (it == structs.end()) { 
+        ST = llvm::StructType::create(ctx, structDecl->name);
+        structs[structDecl->name] = ST;
+    } else
+        ST = it->second;
+    vector<llvm::Type*> fields;
+    for (auto &m : structDecl->members) {
+        fields.push_back(lower_type(m->type.get()));
+    }
+    ST->setBody(fields, false); 
 
 }
 Function* declare_function(const FunctionDecl* funcDecl){
