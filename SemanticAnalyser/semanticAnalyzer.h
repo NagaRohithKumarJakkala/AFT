@@ -41,6 +41,8 @@ class SemanticAnalyzer{
     void handleExpression(Expression* expr);
 
     TypePtr inferType(Expression* expr);
+    bool checkTypeCompatibility(TypePtr left, TypePtr right);
+    bool isAssignable(TypePtr left, TypePtr right);
 
 public:
     void check(Program* program);

@@ -406,13 +406,13 @@ void CodeGen::register_struct(StructDecl* structDecl){
     ST->setBody(fields, false); 
 
 }
-Function* declare_function(const FunctionDecl* funcDecl){
+Function* CodeGen::declare_function(const FunctionDecl* funcDecl){
     return nullptr;
 }
-void define_function(const FunctionDecl* funcDecl){
+void CodeGen::define_function(const FunctionDecl* funcDecl){
 
 }
-void gen_program(const Program* prog){
+void CodeGen::gen_program(const Program* prog){
 
 }
 
