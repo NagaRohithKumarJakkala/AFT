@@ -25,25 +25,25 @@ private:
     std::vector<std::unordered_map<std::string, Symbol>>scopes;
 public:
     SymbolTable();
-    void enterScope();
-    void leaveScope();
-    bool addSymbol(Symbol sym);
+    void enter_scope();
+    void leave_scope();
+    bool add_symbol(Symbol sym);
     Symbol* find(const std::string& name);
 };
 
 class SemanticAnalyzer{
     SymbolTable sym_table;
 
-    void handleNode(ASTNode* node);
+    void handle_node(ASTNode* node);
 
-    void handleFunction(FunctionDecl* func_decl);
-    void handleStruct(StructDecl* struct_decl);
-    void handleStatement(Statement* stmt);
-    void handleExpression(Expression* expr);
+    void handle_function(FunctionDecl* funcDecl);
+    void handle_struct(StructDecl* structDecl);
+    void handle_statement(Statement* stmt);
+    void handle_expression(Expression* expr);
 
-    TypePtr inferType(Expression* expr);
-    bool checkTypeCompatibility(TypePtr left, TypePtr right);
-    bool isAssignable(TypePtr left, TypePtr right);
+    TypePtr infer__type(Expression* expr);
+    bool check_type_compatibility(TypePtr left, TypePtr right);
+    bool is_assignable(TypePtr left, TypePtr right);
 
 public:
     void check(Program* program);
