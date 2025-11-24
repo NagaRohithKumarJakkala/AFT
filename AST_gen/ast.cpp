@@ -1,4 +1,5 @@
 #include <iomanip>
+#include <memory>
 #include "AST.h"
 
 static void indent(int level) {
@@ -282,4 +283,22 @@ void StructDecl::print(int level) {
     std::cout << "StructDecl: " << name << "\n";
     for (auto &m : members)
         m->print(level + 1);
+}
+
+std::unique_ptr<Types> PrimitiveType::clone() const{
+    return std::make_unique<PrimitiveType>(*this);
+}
+std::unique_ptr<Types> VectorType::clone() const {
+        return std::make_unique<VectorType>(element_type->clone());
+}
+
+std::unique_ptr<Types> StructType::clone() const {
+    auto s = std::make_unique<StructType>(this->name);
+    //TODO: implement after completion of type
+
+    // for (auto const& f : fields) {
+    //     s->fields.push_back(f->clone());
+    // }
+    return s;
+
 }

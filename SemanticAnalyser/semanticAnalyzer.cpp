@@ -12,10 +12,27 @@ void SymbolTable:: leave_scope(){
     scopes.pop_back();
 }
 
-bool SymbolTable::add_symbol(Symbol sym){
+bool SymbolTable::add_symbol(const Symbol& sym){
     auto& currentScope = scopes.back();
-    if(currentScope.count(sym.name)) return false;
-    currentScope[sym.name]=std::move(sym);
+    if(currentScope.count(sym.name)){
+        return false;
+    }
+    Symbol copy;
+    copy.name = sym.name;
+    copy.kind = sym.kind;
+    if(sym.type){
+        copy.type = sym.type->clone();
+    }
+    for (const auto &p : sym.parameter_types) {
+        if (p) {
+            copy.parameter_types.push_back(p->clone());
+        } else {
+            copy.parameter_types.push_back(nullptr);
+        }
+    }
+    copy.irValue = sym.irValue;
+
+    currentScope.emplace(copy.name, std::move(copy));
     return true;
 }
 
@@ -50,7 +67,7 @@ void SemanticAnalyzer::handle_function(FunctionDecl* funcDecl){
     sym.name = funcDecl->name;
     sym.kind = SymbolKind::FUNCTION;
     for ( auto& param : funcDecl->params) {
-        sym.parameter_types.push_back(param->type);
+        sym.parameter_types.push_back(param->type->clone());
     }
     sym.type =nullptr;
     sym_table.add_symbol(sym);
@@ -62,7 +79,7 @@ void SemanticAnalyzer::handle_function(FunctionDecl* funcDecl){
         sym_table.add_symbol(ps);
     }
     if (funcDecl->body) {
-        handle_statement(funcDecl->body);
+        handle_statement(funcDecl->body.get());
     }
     sym_table.leave_scope();
     
@@ -137,7 +154,7 @@ void SemanticAnalyzer::handle_expression(Expression* expr){
     if(!expr) return;
     if(auto *id = dynamic_cast<IdentifierExpr*>(expr)){
         if(!sym_table.find(id->name)){
-            errs() << "[semantic] warning: undeclared identifier: " << id->name << "";
+            llvm::errs() << "[semantic] warning: undeclared identifier: " << id->name << "";
         }
         return;
     }
@@ -146,7 +163,10 @@ void SemanticAnalyzer::handle_expression(Expression* expr){
         return;
     }
     if(auto *call = dynamic_cast<FunctionCallExpr*>(expr)){
-        handle_expression(call->function.get());
+        Symbol* fn = sym_table.find(call->callee);
+        if(!fn){
+            //TODO: return error
+        }
         for(auto &a : call->arguments)
             handle_expression(a.get());
         return;
@@ -210,11 +230,13 @@ TypePtr SemanticAnalyzer::infer_type(Expression* expr){
 }
 
 
-bool SemanticAnalyzer::check_type_compatibility(TypePtr left, TypePtr right){
+bool SemanticAnalyzer::check_type_compatibility(const TypePtr& left, const TypePtr& right){
     if(!left || !right) {
         return false;
     }
-    if(typeid(*left) == typeid(*right)){
+    Types &L =*left;
+    Types &R =*right;
+    if(typeid(L) == typeid(R)){
         return true;
     }
     if(auto *leftPrim = dynamic_cast<PrimitiveType*>(left.get())){
@@ -237,7 +259,7 @@ bool SemanticAnalyzer::check_type_compatibility(TypePtr left, TypePtr right){
     }
     return false;
 }
-bool SemanticAnalyzer::is_assignable(TypePtr left, TypePtr right){
+bool SemanticAnalyzer::is_assignable(const TypePtr& left, const TypePtr& right){
     // if(check_type_compatibility(left, right)){
     //     return true;
     // }

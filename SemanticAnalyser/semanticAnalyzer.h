@@ -27,7 +27,7 @@ public:
     SymbolTable();
     void enter_scope();
     void leave_scope();
-    bool add_symbol(Symbol sym);
+    bool add_symbol(const Symbol& sym);
     Symbol* find(const std::string& name);
 };
 
@@ -41,9 +41,9 @@ class SemanticAnalyzer{
     void handle_statement(Statement* stmt);
     void handle_expression(Expression* expr);
 
-    TypePtr infer__type(Expression* expr);
-    bool check_type_compatibility(TypePtr left, TypePtr right);
-    bool is_assignable(TypePtr left, TypePtr right);
+    TypePtr infer_type(Expression* expr);
+    bool check_type_compatibility(const TypePtr& left, const TypePtr& right);
+    bool is_assignable(const TypePtr& left, const TypePtr& right);
 
 public:
     void check(Program* program);

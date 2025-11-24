@@ -92,7 +92,21 @@ Value* CodeGen::gen_expr(const Expression* e) {
         switch (un->op) {
             case UnaryOp::PLUS: return v;
             case UnaryOp::MINUS: return v->getType()->isFloatingPointTy() ? builder.CreateFNeg(v) : builder.CreateNeg(v);
-            case UnaryOp::NOT: { Value *b = boolToI1(builder, v); return builder.CreateNot(b); }
+            case UnaryOp::NOT: {
+                Value *b = boolToI1(builder, v);
+                return builder.CreateNot(b);
+            }
+            case UnaryOp::REVERSE:{
+            if (v->getType()->isPointerTy()) {
+                errs()<<"reverse for vectors not implemented yet";
+                return nullptr;
+            }
+            else{
+                errs()<<"reverse will not work for non vectors";
+                return nullptr;
+                    exit(1);
+            }
+            }
             default: return v;
         }
     }
@@ -102,6 +116,33 @@ Value* CodeGen::gen_expr(const Expression* e) {
         if (!L||!R){
             return nullptr;
         }
+        if (bin->op == BinaryOp::PLUS) {
+        
+            if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
+                //TODO: implement cancetanation
+                errs() << "Vector concatenation not yet implemented\n";
+                return nullptr;
+            }
+            else{
+                errs()<< "not correct operands for this concatenation";
+                return nullptr;
+                exit(1);
+            }
+        }
+        if(bin->op == BinaryOp::CONVOLUTION){
+            if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
+                //TODO: implement cancetanation
+                errs() << "Vector convulution not yet implemented\n";
+                return nullptr;
+            }
+            else{
+                errs()<< "not correct operands for this convulution";
+                return nullptr;
+                exit(1);
+            }
+             
+        }
+
         bool fp = L->getType()->isFloatingPointTy() || R->getType()->isFloatingPointTy();
         if (fp) {
             if (!L->getType()->isFloatingPointTy())
@@ -207,6 +248,13 @@ Value* CodeGen::gen_expr(const Expression* e) {
             start = builder.CreateFPToSI(start, llvm::Type::getInt64Ty(ctx));
         if (!end->getType()->isIntegerTy())
             end = builder.CreateFPToSI(end, llvm::Type::getInt64Ty(ctx));
+        if (start->getType()->isIntegerTy() && start->getType() != llvm::Type::getInt64Ty(ctx)){
+            start = builder.CreateIntCast(start, llvm::Type::getInt64Ty(ctx),true);
+        }
+        if (end->getType()->isIntegerTy() && end->getType() != llvm::Type::getInt64Ty(ctx)){
+            end = builder.CreateIntCast(end, llvm::Type::getInt64Ty(ctx),true);
+        }
+
         Value *incl = ConstantInt::get(llvm::Type::getInt1Ty(ctx), rng->inclusive);
         Value *aggUndef = UndefValue::get(RT);
         aggUndef = builder.CreateInsertValue(aggUndef, start, {0});

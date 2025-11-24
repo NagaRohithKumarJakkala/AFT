@@ -4,7 +4,7 @@ let signal: [f64] = [];
 for i in 0..num_samples {
 let t = i as f64 / sample_rate;
 let sample = sin(2.0 * PI * frequency * t);
-signal = signal || [sample]; // Concatenate
+signal = signal + [sample]; // Concatenate
 }
 return signal;
 }
