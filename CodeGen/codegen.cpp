@@ -5,9 +5,11 @@ AllocaInst* CodeGen::createEntryAlloca(Function *F, llvm::Type *Ty, const Twine 
     return tmp.CreateAlloca(Ty, nullptr, name);
 }
 
-llvm::Type* CodeGen::lower_type(const ::Type* t){
+llvm::Type* CodeGen::lower_type(const ::Types* t){
     if(!t) return llvm::Type::getInt64Ty(ctx);
-    if(auto * pt = dynamic_cast<const PrimitiveType*>(t)) return prim_to_LLVM(pt->type);
+    if(auto * pt = dynamic_cast<const PrimitiveType*>(t)){
+        return prim_to_LLVM(pt->type);
+    }
     if(auto *vt = dynamic_cast<const ::VectorType*>(t)){
         llvm::Type* elem = lower_type(vt->element_type.get());
         return PointerType::getUnqual(elem);
@@ -407,24 +409,126 @@ void CodeGen::register_struct(StructDecl* structDecl){
 
 }
 Function* CodeGen::declare_function(const FunctionDecl* funcDecl){
+
+    vector<llvm::Type*> argTys;
+    for (auto &p : funcDecl->params) argTys.push_back(lower_type(p->type.get()));
+    llvm::Type *retTy;
+    if (funcDecl->return_types.empty()) {
+        retTy = llvm::Type::getVoidTy(ctx);
+    }
+    else if (funcDecl->return_types.size()==1){
+        retTy = lower_type(funcDecl->return_types[0].get());
+    } else {
+        vector<llvm::Type*> rts;
+        for (auto &rt : funcDecl->return_types){
+            rts.push_back(lower_type(rt.get()));
+        }
+        retTy = llvm::StructType::get(ctx, rts);
+    }
+    FunctionType *FT = FunctionType::get(retTy, argTys, false);
+    Function *F = Function::Create(FT, Function::ExternalLinkage, funcDecl->name, mod.get());
+    unsigned idx = 0;
+    for (auto &Arg : F->args()){
+        Arg.setName(funcDecl->params[idx++]->name);
+    }
+    functions[funcDecl->name] = F;
+    return F;
     return nullptr;
 }
 void CodeGen::define_function(const FunctionDecl* funcDecl){
+    //Function *F = declare_function(funcDecl);
+    Function *F = functions[funcDecl->name];
+    BasicBlock *BB = BasicBlock::Create(ctx, "entry", F);
+    builder.SetInsertPoint(BB);
+    push_scope(); 
+    unsigned idx=0;
+    for (auto &Arg : F->args()) {
+        llvm::Type *Ty = Arg.getType();
+        AllocaInst *A = createEntryAlloca(F, Ty, Arg.getName());
+        builder.CreateStore(&Arg, A); 
+        bind_var(std::string(Arg.getName()), A);
+        idx++;
+    }
+    if (funcDecl->body){
+        gen_block(funcDecl->body.get(), F);
+    }
+    if (!BB->getTerminator()) {
+        if (F->getReturnType()->isVoidTy()){
+            builder.CreateRetVoid();
+        } else if (F->getReturnType()->isIntegerTy()){
+            builder.CreateRet(ConstantInt::get(F->getReturnType(), 0));
+        } else{
+            builder.CreateUnreachable();
+        }
+    }
+    pop_scope();
+    string err;
+    raw_string_ostream rso(err);
+    if (verifyFunction(*F, &rso)) {
+        errs() << "Function verification failed for " << funcDecl->name << ": " << rso.str() << " ";
+        F->print(errs());
+    }
 
 }
 void CodeGen::gen_program(const Program* prog){
+    for (auto &B : prog->Blocks){
+        if (auto *S = dynamic_cast<StructDecl*>(B.get())) {
+            register_struct(S);
+        }
+    }
+    for (auto &B : prog->Blocks){
+        if (auto *F = dynamic_cast<FunctionDecl*>(B.get())) {
+            declare_function(F);
+        }
+    }
+    for (auto &B : prog->Blocks) {
+        if (auto *F = dynamic_cast<FunctionDecl*>(B.get())) {
+            define_function(F);
+        } else if (auto *S = dynamic_cast<Statement*>(B.get())) {
+            if (!mod->getFunction("main")) {
+                FunctionType *FT = FunctionType::get(llvm::Type::getInt32Ty(ctx), {}, false);
+                Function *Main = Function::Create(FT, Function::ExternalLinkage, "main", mod.get());
+                BasicBlock *BB = BasicBlock::Create(ctx, "entry", Main);
+                builder.SetInsertPoint(BB);
+                push_scope();
+                gen_stmt(S, Main);
+                if (!builder.GetInsertBlock()->getTerminator()){
+                    builder.CreateRet(ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0));
+                }
+                pop_scope();
+            } else { 
+                auto *Main = mod->getFunction("main");
+                gen_stmt(S, Main);
+            }
+        }
+    }
 
 }
 
 AllocaInst* CodeGen::lookup_var(const std::string &name) {
     for (auto it = varScopes.rbegin(); it != varScopes.rend(); ++it) {
         auto f = it->find(name);
-        if (f != it->end()) return f->second;
+        if (f != it->end()){ 
+            return f->second;
         }
-        Symbol* s = sym_table.find(name);
-        //if (s && s->irValue) return dyn_cast<AllocaInst>(s->irValue);
-        //TODO: handle it later
+    }
+    Symbol* s = sym_table.find(name);
+    if (s && s->irValue){ 
+        return dyn_cast<AllocaInst>(s->irValue);
+    }
         return nullptr;
 }
 
+void CodeGen::push_scope(){
+    varScopes.emplace_back();
+}
+void CodeGen::pop_scope(){
+    varScopes.pop_back();
 
+}
+
+void CodeGen::bind_var(const std::string &name, AllocaInst* A) {
+    varScopes.back()[name] = A;
+    Symbol* s = sym_table.find(name);
+    if (s) s->irValue = A;
+}

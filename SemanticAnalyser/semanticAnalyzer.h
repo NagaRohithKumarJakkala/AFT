@@ -17,6 +17,7 @@ struct Symbol {
     SymbolKind kind;
     TypePtr type;
     std::vector<TypePtr> parameter_types;
+    llvm::Value* irValue = nullptr;
 };
 
 struct SymbolTable{

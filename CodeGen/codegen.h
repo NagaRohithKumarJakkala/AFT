@@ -14,7 +14,7 @@ struct CodeGen{
         builder(ctx),
         sym_table(sym){}
     AllocaInst* createEntryAlloca(Function *fn, llvm::Type *ty, const Twine &name);
-    llvm::Type* lower_type(const ::Type* t);
+    llvm::Type* lower_type(const ::Types* t);
     Value* gen_expr(const Expression*e);
     void gen_stmt(const Statement* s,Function* fn);
     void gen_block(const StatementBlock* block, Function* fn);

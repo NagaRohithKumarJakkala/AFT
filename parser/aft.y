@@ -32,13 +32,13 @@
     struct Statement* statement;
     struct IfStmt* if_stmt;
     struct Expression* expression;
-    struct Type* type;
+    struct Types* type;
     struct StatementBlock* stmt_block;
     struct Parameter* parameter;
     struct FunctionCallExpr* function_call;
     std::vector<struct Expression*>* expr_list;
     std::vector<struct Statement*>* stmt_list;
-    std::vector<struct Type*>* type_list;
+    std::vector<struct Types*>* type_list;
     std::vector<struct Parameter*>* param_list;
     std::vector<std::string>* identifier_list;
 }
@@ -171,20 +171,20 @@ parameter_list:
 
 parameter:
     IDENTIFIER COLON type {
-        $$ = new Parameter($1, std::unique_ptr<Type>($3));
+        $$ = new Parameter($1, std::unique_ptr<Types>($3));
     }
     ;
 
 return_type_list:
     /* empty */ {
-        $$ = new std::vector<Type*>();
+        $$ = new std::vector<Types*>();
     }
     | type {
-        $$ = new std::vector<Type*>();
+        $$ = new std::vector<Types*>();
         $$->push_back($1);
     }
     | LEFTPAREN type_list RIGHTPAREN {
-        $$ = new std::vector<Type*>();
+        $$ = new std::vector<Types*>();
         for (auto* type : *$2) {
             $$->push_back(type);
         }
@@ -193,7 +193,7 @@ return_type_list:
 
 type_list:
     type {
-$$ = new std::vector<Type*>();
+$$ = new std::vector<Types*>();
         $$->push_back($1);
     }
     | type_list COMMA type {
@@ -761,25 +761,8 @@ range_expr:
 
 %%
 
-int main(int argc, char** argv) {
-    if (argc > 1) {
-        FILE* file = fopen(argv[1], "r");
-        if (!file) {
-            fprintf(stderr, "Error: Cannot open file %s\n", argv[1]);
-            return 1;
-        }
-        extern FILE* yyin;
-        yyin = file;
-    }
-
-    yyparse();
-
-    ast_root->print(0);
-
-    return 0;
-}
-
 void yyerror(const char*s) {
     fprintf(stderr, "Parse error at line %d: %s\n", yylineno, s);
     fprintf(stderr, "Near token: %s\n", yytext);
 }
+

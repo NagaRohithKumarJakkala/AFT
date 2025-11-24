@@ -1,4 +1,5 @@
-all : parser.out
+#all : parser.out
+all : aft.tab.h aft.tab.c lex.yy.c
 
 aft.tab.h aft.tab.c : aft.y
 	bison -d aft.y -o aft.tab.c

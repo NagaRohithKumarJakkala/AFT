@@ -49,19 +49,34 @@ void SemanticAnalyzer::handleFunction(FunctionDecl* func_decl){
     // TODO: handle function
 }
 
-void handleStruct(StructDecl* struct_decl){
+void SemanticAnalyzer::handleStruct(StructDecl* struct_decl){
     //TODO: handle struct
 }
 
-void handleStatement(Statement* stmt){
+void SemanticAnalyzer::handleStatement(Statement* stmt){
     //TODO: handle statement
 }
 
-void handleExpression(Expression* expr){
+void SemanticAnalyzer::handleExpression(Expression* expr){
     //TODO: handle Expression
 }
 
-TypePtr inferType(Expression* expr){
+TypePtr SemanticAnalyzer::inferType(Expression* expr){
     //TODO: handle Expression
     return nullptr;
 }
+
+void SemanticAnalyzer::check(Program* program){
+    //TODO : handle this 
+}
+
+
+bool SemanticAnalyzer::checkTypeCompatibility(TypePtr left, TypePtr right){
+    //TODO : handle this 
+    return false;
+}
+bool SemanticAnalyzer::isAssignable(TypePtr left, TypePtr right){
+    //TODO : handle this 
+    return false;
+}
+

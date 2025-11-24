@@ -52,10 +52,10 @@ STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
 
 
 
-".."                { return RANGE; }
 "..="               { return RANGEUPTO; }
+".."                { return RANGE; }
 
-{DIGIT}+"."{DIGIT}*{EXPONENT}? { yylval.sval = strdup(yytext); return FLOAT; }
+{DIGIT}+"."{DIGIT}+{EXPONENT}? { yylval.sval = strdup(yytext); return FLOAT; }
 "."{DIGIT}+{EXPONENT}?              { yylval.sval = strdup(yytext); return FLOAT; }
 {DIGIT}+{EXPONENT}                  { yylval.sval = strdup(yytext); return FLOAT; }
 

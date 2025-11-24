@@ -13,5 +13,5 @@ let fs = 44100.0; // Sample rate
 let freq = 440.0; // A4 note
 let duration = 1.0; // 1 second
 let sine_wave = generate_sine_wave(freq, fs, duration);
-dbg(sine_wave);
+//dbg(sine_wave);
 }

@@ -34,12 +34,12 @@ struct StructDecl;
 struct Parameter;
 struct Statement;
 struct Expression;
-struct Type;
+struct Types;
 
 using NodePtr = std::unique_ptr<struct ASTNode>;
 using StmtPtr = std::unique_ptr<Statement>;
 using ExprPtr = std::unique_ptr<Expression>;
-using TypePtr = std::unique_ptr<Type>;
+using TypePtr = std::unique_ptr<Types>;
 using ParameterPtr = std::unique_ptr<Parameter>;
 
 
@@ -82,25 +82,25 @@ struct Program : public ASTNode {
 
 };
 
-struct Type: public ASTNode{
-    virtual ~Type() = default;
+struct Types: public ASTNode{
+    virtual ~Types() = default;
 };
 
-struct PrimitiveType: public Type{
+struct PrimitiveType: public Types{
     PrimitiveTypeEnum type;
     PrimitiveType(PrimitiveTypeEnum t):type(t){}
     void print(int level) override;
 };
 
 
-struct VectorType : public Type {
+struct VectorType : public Types {
     TypePtr element_type;
     VectorType(TypePtr elem) : element_type(std::move(elem)) {}
     void print(int level) override;
 };
 
 
-struct StructType : public Type {
+struct StructType : public Types {
     std::string name;
     explicit StructType(std::string n) : name(std::move(n)) {}
     void print(int level) override;
