@@ -1,0 +1,25 @@
+fn fft(x: [c64]) [c64] {
+    let n = len(x);
+    let result: [c64] = [];
+    if n == 1 {
+        return x;
+    }
+    let even: [c64] = [];
+    let odd: [c64] = [];
+    for i in 0..n/2 {
+        even = even || [x[i]];
+    }
+    for i in n/2..n {
+        odd = odd || [x[i]];
+    }
+    let even = fft(even);
+    let odd = fft(odd);
+    let mut w: c64 = 1;
+    let mut wn = exp(-2.0 * PI * I / n);
+    for k in 0..n/2 {
+        result = result || [even[k] + w * odd[k]];
+        result = result || [even[k] - w * odd[k]];
+        w = w * wn;
+    }
+    return result;
+}

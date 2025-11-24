@@ -1,0 +1,20 @@
+fn resample(x: [c64], fs1: f64, fs2: f64) [c64] {
+    let n = len(x);
+    let result: [c64] = [];
+    if fs2 > fs1 {
+        let factor = (fs2 / fs1) as usize;
+        for value in x {
+            result = result || [value];
+            for i in 0..factor - 1 {
+                result = result || [0];
+            }
+        }
+        return result;
+    } else {
+        let factor = (fs1 / fs2) as usize;
+        for i in 0..n/factor {
+            result = result || [x[i*factor]];
+        }
+    }
+    return result;
+}
