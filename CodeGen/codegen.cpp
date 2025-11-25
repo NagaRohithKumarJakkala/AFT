@@ -11,8 +11,21 @@ llvm::Type* CodeGen::lower_type(const ::Types* t){
         return prim_to_LLVM(pt->type);
     }
     if(auto *vt = dynamic_cast<const ::VectorType*>(t)){
-        llvm::Type* elem = lower_type(vt->element_type.get());
-        return PointerType::getUnqual(elem);
+        // llvm::Type* elem = lower_type(vt->element_type.get());
+        // return PointerType::getUnqual(elem);
+        llvm::Type *elem = lower_type(vt->element_type.get());
+
+        std::string name = "__vec_" + std::to_string((uintptr_t)elem);
+
+        auto it = structs.find(name);
+        if (it == structs.end()) {
+            auto *ST = llvm::StructType::create(ctx, name);
+            ST->setBody({llvm::PointerType::getUnqual(elem),
+                     llvm::Type::getInt64Ty(ctx)});
+            structs[name] = ST;
+            return ST;
+        }
+        return it->second;
     }
     if(auto * st = dynamic_cast<const ::StructType*>(t)){
         auto it = structs.find(st->name);
@@ -79,6 +92,56 @@ Value* CodeGen::gen_expr(const Expression* e) {
     if (dynamic_cast<const PiLiteral*>(e)) {
         return ConstantFP::get(llvm::Type::getDoubleTy(ctx), 3.141592653589793);
     }
+
+    if(auto *vec=dynamic_cast<const VectorLiteralExpr*>(e)){
+    size_t n = vec->elements.size();
+    
+    Value *firstElem = gen_expr(vec->elements[0].get());
+    llvm::Type *elemTy = firstElem->getType();
+    
+    llvm::ArrayType *arrTy = llvm::ArrayType::get(elemTy, n);
+    Function *F = builder.GetInsertBlock()->getParent();
+    AllocaInst *arr = createEntryAlloca(F, arrTy, "vec.arr");
+    
+    Value *ptr0_store = builder.CreateInBoundsGEP(
+        arrTy, arr,
+        {ConstantInt::get(Type::getInt32Ty(ctx), 0),
+         ConstantInt::get(Type::getInt32Ty(ctx), 0)});
+    builder.CreateStore(firstElem, ptr0_store);
+    
+    for (size_t i = 1; i < n; i++) {
+        Value *elem = gen_expr(vec->elements[i].get());
+        Value *ptr = builder.CreateInBoundsGEP(
+            arrTy, arr,
+            {ConstantInt::get(Type::getInt32Ty(ctx), 0),
+             ConstantInt::get(Type::getInt32Ty(ctx), i)});
+        builder.CreateStore(elem, ptr);
+    }
+    
+    llvm::StructType *vecTy = llvm::StructType::get(
+        ctx,
+        {llvm::PointerType::get(elemTy,0), Type::getInt64Ty(ctx)}
+    );
+    
+    AllocaInst *vecStruct = createEntryAlloca(F, vecTy, "vec.struct");
+    
+    Value *ptr0 = builder.CreateInBoundsGEP(
+        arrTy, arr,
+        {ConstantInt::get(Type::getInt32Ty(ctx), 0),
+         ConstantInt::get(Type::getInt32Ty(ctx), 0)});
+    
+    Value *lenVal = ConstantInt::get(Type::getInt64Ty(ctx), n);
+    
+    // Insert fields into struct
+    Value *dataPtrSlot = builder.CreateStructGEP(vecTy, vecStruct, 0);
+    Value *lenSlot = builder.CreateStructGEP(vecTy, vecStruct, 1);
+    
+    builder.CreateStore(ptr0, dataPtrSlot);
+    builder.CreateStore(lenVal, lenSlot);
+    
+    return builder.CreateLoad(vecTy, vecStruct);
+}
+            
     if (auto *str = dynamic_cast<const ::StringLiteral*>(e)){
         return builder.CreateGlobalString(str->value);
     }
@@ -216,11 +279,28 @@ Value* CodeGen::gen_expr(const Expression* e) {
         Value *base = gen_expr(idx->object.get());
         Value *i = gen_expr(idx->index.get());
         if (!base||!i) return nullptr;
-        if (base->getType()->isPointerTy()) {
-            llvm::Type *elem = llvm::cast<llvm::PointerType>(base->getType());
-            Value *ptr = builder.CreateInBoundsGEP(elem, base, i);
-            return builder.CreateLoad(elem, ptr);
-        }
+        llvm::Type *ty = base->getType();
+
+    if (auto *vecTy = llvm::dyn_cast<llvm::StructType>(ty)) {
+
+        Value *dataPtr = builder.CreateExtractValue(base, {0});
+
+        llvm::Type *elemPtrTy = dataPtr->getType();
+
+        Value *elemPtr = builder.CreateInBoundsGEP(
+            elemPtrTy,
+            dataPtr,
+            i
+        );
+
+        return builder.CreateLoad(elemPtrTy, elemPtr);
+    }
+
+        // if (base->getType()->isPointerTy()) {
+        //     llvm::Type *elem = llvm::cast<llvm::PointerType>(base->getType());
+        //     Value *ptr = builder.CreateInBoundsGEP(elem, base, i);
+        //     return builder.CreateLoad(elem, ptr);
+        // }
         return nullptr;
     }
     if (auto *cast = dynamic_cast<const TypeCastExpr*>(e)) {
@@ -240,6 +320,19 @@ Value* CodeGen::gen_expr(const Expression* e) {
         return nullptr;
     }
     if (auto *call = dynamic_cast<const FunctionCallExpr*>(e)) {
+
+        if (call->callee == "len") {
+            Value *vecVal = gen_expr(call->arguments[0].get());
+            return builder.CreateExtractValue(vecVal, {1}); // length
+        }
+
+        if (call->callee == "isempty") {
+            Value *vecVal = gen_expr(call->arguments[0].get());
+            Value *lenVal = builder.CreateExtractValue(vecVal, {1});
+            return builder.CreateICmpEQ(lenVal,
+            ConstantInt::get(Type::getInt64Ty(ctx), 0));
+        }
+
         if (call->callee == "print" || call->callee=="dbg") {
             auto printfFn = functions["print"];
 
