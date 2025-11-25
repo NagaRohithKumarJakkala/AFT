@@ -195,6 +195,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
             }
             
             if(i < let->values.size() && let->values[i]){
+                handle_expression(let->values[i].get());
                 TypePtr value_type = infer_type(let->values[i].get());
                 if(!check_type_compatibility(var_sym.type, value_type)){
                     report_error("Type mismatch in initialization of '" + let->names[i] + 
@@ -231,6 +232,8 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
             } else {
                 var_sym.type = infer_type(const_decl->values[i].get());
             }
+
+            handle_expression(const_decl->values[i].get());
             
             TypePtr value_type = infer_type(const_decl->values[i].get());
             if(!check_type_compatibility(var_sym.type, value_type)){
@@ -260,6 +263,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
             }
             
             if(i < asgn->values.size() && asgn->values[i]){
+                handle_expression(asgn->values[i].get());
                 TypePtr value_type = infer_type(asgn->values[i].get());
                 if(!check_type_compatibility(sym->type, value_type)){
                     report_error("Type mismatch in assignment to '" + asgn->targets[i] + 
@@ -272,6 +276,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
     }
     
     if(auto ifs = dynamic_cast<IfStmt*>(stmt)){
+        handle_expression(ifs->condition.get());
         TypePtr cond_type = infer_type(ifs->condition.get());
         auto prim_type = dynamic_cast<PrimitiveType*>(cond_type.get());
         if(!prim_type || prim_type->type != PrimitiveTypeEnum::BOOL){
@@ -291,6 +296,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
     }
     
     if(auto wh = dynamic_cast<WhileStmt*>(stmt)){
+        handle_expression(wh->condition.get());
         TypePtr cond_type = infer_type(wh->condition.get());
         auto prim_type = dynamic_cast<PrimitiveType*>(cond_type.get());
         if(!prim_type || prim_type->type != PrimitiveTypeEnum::BOOL){
@@ -307,6 +313,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
     }
     
     if(auto forst = dynamic_cast<ForStmt*>(stmt)){
+        handle_expression(forst->iterable.get());
         TypePtr iter_type = infer_type(forst->iterable.get());
         
         bool is_valid_iterable = false;
@@ -356,6 +363,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
 
     
     if(auto repeat_stmt = dynamic_cast<RepeatStmt*>(stmt)){
+        handle_expression(repeat_stmt->count.get());
         TypePtr count_type = infer_type(repeat_stmt->count.get());
         
         if(!is_integer_type(count_type)){
@@ -380,6 +388,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
         if(ret->values.empty() && current_function_return_type){
             report_error("Function expects return value of type " + type_to_string(current_function_return_type));
         } else if(!ret->values.empty()){
+            handle_expression(ret->values[0].get());
             TypePtr return_type = infer_type(ret->values[0].get());
             if(!check_type_compatibility(current_function_return_type, return_type)){
                 report_error("Return type mismatch: expected " + type_to_string(current_function_return_type) + 
@@ -446,7 +455,6 @@ void SemanticAnalyzer::handle_expression(Expression* expr){
     }
     
     if(auto bin = dynamic_cast<BinaryExpression*>(expr)){
-        printf("[semantic] info: Handling binary expression at line %d\n", current_line);
         TypePtr left_type = infer_type(bin->left.get());
         TypePtr right_type = infer_type(bin->right.get());
         check_binary_operation(bin->op, left_type, right_type, current_line);
@@ -609,9 +617,7 @@ bool SemanticAnalyzer::can_cast_to(const TypePtr& from, const TypePtr& to){
 }
 
 void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, const TypePtr& right, int line){
-    printf("[semantic] info: Checking binary operation at line %d\n", line);
     if(!left || !right) return;
-    printf("[semantic] info: Left type: %s, Right type: %s\n", type_to_string(left).c_str(), type_to_string(right).c_str());
     switch(op){
         case BinaryOp::PLUS:
         case BinaryOp::MINUS:
@@ -628,9 +634,7 @@ void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, 
         case BinaryOp::XOR:
         case BinaryOp::LEFTSHIFT:
         case BinaryOp::RIGHTSHIFT:
-        printf("[semantic] error: Bitwise operation check\n");
             if(!is_integer_type(left) || !is_integer_type(right)){
-                printf("[semantic] error: Bitwise operation requires integer types\n");
                 report_error("Bitwise operation requires integer types");
             }
             break;
