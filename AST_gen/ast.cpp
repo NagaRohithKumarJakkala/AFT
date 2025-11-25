@@ -65,7 +65,8 @@ void ConstDecl::print(int level) {
     std::cout << "ConstDecl:\n";
     for (size_t i = 0; i < names.size(); ++i) {
         indent(level + 1);
-        std::cout << names[i] << "\n";
+        //TODO: handle this later
+        //std::cout << names[i] << "\n";
         if (i < types.size() && types[i])
             types[i]->print(level + 2);
         if (i < values.size() && values[i])
@@ -78,7 +79,7 @@ void Assignment::print(int level) {
     std::cout << "Assignment:\n";
     for (size_t i = 0; i < targets.size(); ++i) {
         indent(level + 1);
-        std::cout << "Target: " << targets[i] << "\n";
+        //std::cout << "Target: " << targets[i] << "\n";
         if (i < values.size() && values[i])
             values[i]->print(level + 2);
     }

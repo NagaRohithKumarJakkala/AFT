@@ -162,7 +162,7 @@ struct ConstDecl : public Statement {
 };
 
 struct Assignment : public Statement {
-  std::vector<std::string> targets;
+  std::vector<ExprPtr> targets;
   std::vector<ExprPtr> values;
   void print(int level) override;
 };

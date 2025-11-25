@@ -261,33 +261,73 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
         }
         return;
     }
-    
-    if(auto asgn = dynamic_cast<Assignment*>(stmt)){
-        for(size_t i = 0; i < asgn->targets.size(); ++i){
-            Symbol* sym = sym_table.find(asgn->targets[i]);
-            if(!sym){
-                report_error("Undeclared variable '" + asgn->targets[i] + "'");
+
+    if (auto asgn = dynamic_cast<Assignment*>(stmt)) {
+        for (size_t i = 0; i < asgn->targets.size(); ++i) {
+
+        Expression* target = asgn->targets[i].get();
+        Expression* value  = asgn->values[i].get();
+
+        if (auto* id = dynamic_cast<IdentifierExpr*>(target)) {
+
+            Symbol* sym = sym_table.find(id->name);
+            if (!sym) {
+                report_error("Undeclared variable '" + id->name + "'");
                 continue;
             }
-            
-            if(sym->is_const){
-                report_error("Cannot assign to const variable '" + asgn->targets[i] + "'");
+
+            if (sym->is_const) {
+                report_error("Cannot assign to const variable '" + id->name + "'");
                 continue;
             }
-            
-            if(i < asgn->values.size() && asgn->values[i]){
-                handle_expression(asgn->values[i].get());
-                TypePtr value_type = infer_type(asgn->values[i].get());
-                if(!check_type_compatibility(sym->type, value_type)){
-                    report_error("Type mismatch in assignment to '" + asgn->targets[i] + 
-                              "': expected " + type_to_string(sym->type) + 
-                              ", got " + type_to_string(value_type));
-                }
+
+            handle_expression(value);
+            TypePtr rhs_type = infer_type(value);
+
+            if (!check_type_compatibility(sym->type, rhs_type)) {
+                report_error(
+                    "Type mismatch in assignment to '" + id->name +
+                    "': expected " + type_to_string(sym->type) +
+                    ", got " + type_to_string(rhs_type));
             }
+
+            continue;
+        }
+
+        if (auto* idx = dynamic_cast<IndexExpression*>(target)) {
+
+            handle_expression(idx->object.get());
+            TypePtr obj_type = infer_type(idx->object.get());
+
+            auto* vec_type = dynamic_cast<VectorType*>(obj_type.get());
+            if (!vec_type) {
+                report_error("Left-hand side of indexed assignment must be a vector");
+                continue;
+            }
+
+            handle_expression(idx->index.get());
+            TypePtr index_type = infer_type(idx->index.get());
+            if (!is_integer_type(index_type)) {
+                report_error("Vector index must be an integer type");
+                continue;
+            }
+
+            handle_expression(value);
+            TypePtr rhs_type = infer_type(value);
+            if (!check_type_compatibility(vec_type->element_type, rhs_type)) {
+                report_error(
+                    "Type mismatch in vector element assignment: expected " +
+                    type_to_string(vec_type->element_type) +
+                    ", got " + type_to_string(rhs_type));
+            }
+
+            continue;
+        }
+
+        report_error("Invalid assignment target: not an assignable expression");
         }
         return;
     }
-    
     if(auto ifs = dynamic_cast<IfStmt*>(stmt)){
         handle_expression(ifs->condition.get());
         TypePtr cond_type = infer_type(ifs->condition.get());

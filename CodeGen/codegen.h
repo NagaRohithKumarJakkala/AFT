@@ -3,6 +3,29 @@
 using namespace llvm;
 using namespace std;
 
+enum ElemTypeId {
+    E_UNKNOWN = 0,
+
+    E_I8 = 1,   E_I16,  E_I32,  E_I64,  E_I128,
+    E_U8,       E_U16,  E_U32,  E_U64,  E_U128,
+    E_F32,      E_F64,
+    E_C32,      E_C64,
+    E_BOOL,
+    E_STR
+};
+
+struct VectorInfo {
+    llvm::Value* header;
+    llvm::Value* dataPtr;
+    llvm::Value* length;
+    llvm::Value* typeId;
+    llvm::Value* capacity;
+};
+
+
+
+
+
 struct CodeGen{
     LLVMContext ctx;
     unique_ptr<Module>mod;
@@ -35,4 +58,18 @@ struct CodeGen{
     void declare_builtin_functions();
     Function* declare_print();
     Function* declare_dbg();
+    int primitive_type_id(const Types* t);
+    llvm::Type* elemTypeFromId(int id);
+    int typeIdFromLLVM(llvm::Type *T);
+    Function* declare_vec_create();
+    Function* declare_vec_resize();
+    Function* declare_vec_index_ptr();
+    Function* declare_vec_free();
+    Function* declare_vec_push();
+
+    VectorInfo unpackVector(Value* vecHeader);
+    Value* loadVectorElement(const VectorInfo &V, Value* index);
+    void storeVectorElement(const VectorInfo &V, Value* index, Value* rhs);
+
+
 };

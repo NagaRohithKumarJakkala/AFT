@@ -6,4 +6,4 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-clang temps/temp.ll -o a.out
+clang temps/temp.ll external_functions/vector_runtime.o -o a.out

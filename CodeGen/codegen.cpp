@@ -1,5 +1,111 @@
 #include "codegen.h"
 
+
+
+
+int CodeGen::typeIdFromLLVM(llvm::Type *T) {
+    if (T->isIntegerTy(1)) return E_BOOL;
+    if (T->isIntegerTy(8)) return E_I8;
+    if (T->isIntegerTy(16)) return E_I16;
+    if (T->isIntegerTy(32)) return E_I32;
+    if (T->isIntegerTy(64)) return E_I64;
+    if (auto *IT = llvm::dyn_cast<llvm::IntegerType>(T))
+        if (IT->getBitWidth() == 128) return E_I128;
+
+    if (T->isFloatTy()) return E_F32;
+    if (T->isDoubleTy()) return E_F64;
+
+    if (auto *ST = llvm::dyn_cast<llvm::StructType>(T)) {
+        if (!ST->isLiteral()) return E_UNKNOWN;  
+
+        if (ST->getNumElements() == 2) {
+            llvm::Type *a = ST->getElementType(0);
+            llvm::Type *b = ST->getElementType(1);
+
+            if (a->isFloatTy() && b->isFloatTy()) return E_C32;
+            if (a->isDoubleTy() && b->isDoubleTy()) return E_C64;
+        }
+    }
+
+    if (T->isPointerTy()) return E_STR; 
+
+    return E_UNKNOWN;
+}
+
+
+int CodeGen::primitive_type_id(const Types* t) {
+    if (!t) return E_UNKNOWN;
+
+    if (auto *p = dynamic_cast<const PrimitiveType*>(t)) {
+        switch (p->type) {
+            case PrimitiveTypeEnum::I8:   return E_I8;
+            case PrimitiveTypeEnum::I16:  return E_I16;
+            case PrimitiveTypeEnum::I32:  return E_I32;
+            case PrimitiveTypeEnum::I64:  return E_I64;
+            case PrimitiveTypeEnum::I128: return E_I128;
+
+            case PrimitiveTypeEnum::U8:   return E_U8;
+            case PrimitiveTypeEnum::U16:  return E_U16;
+            case PrimitiveTypeEnum::U32:  return E_U32;
+            case PrimitiveTypeEnum::U64:  return E_U64;
+            case PrimitiveTypeEnum::U128: return E_U128;
+
+            case PrimitiveTypeEnum::F32:  return E_F32;
+            case PrimitiveTypeEnum::F64:  return E_F64;
+
+            case PrimitiveTypeEnum::C32:  return E_C32;
+            case PrimitiveTypeEnum::C64:  return E_C64;
+
+            case PrimitiveTypeEnum::BOOL: return E_BOOL;
+            case PrimitiveTypeEnum::STR:  return E_STR;
+
+            default: return E_UNKNOWN;
+        }
+    }
+
+    return E_UNKNOWN;
+}
+
+llvm::Type* CodeGen::elemTypeFromId(int id) {
+    switch (id) {
+        case E_I8:   return llvm::Type::getInt8Ty(ctx);
+        case E_I16:  return llvm::Type::getInt16Ty(ctx);
+        case E_I32:  return llvm::Type::getInt32Ty(ctx);
+        case E_I64:  return llvm::Type::getInt64Ty(ctx);
+        case E_I128: return llvm::IntegerType::get(ctx, 128);
+
+        case E_U8:   return llvm::Type::getInt8Ty(ctx);
+        case E_U16:  return llvm::Type::getInt16Ty(ctx);
+        case E_U32:  return llvm::Type::getInt32Ty(ctx);
+        case E_U64:  return llvm::Type::getInt64Ty(ctx);
+        case E_U128: return llvm::IntegerType::get(ctx, 128);
+
+        case E_F32: return llvm::Type::getFloatTy(ctx);
+        case E_F64: return llvm::Type::getDoubleTy(ctx);
+
+        case E_C32:
+            return llvm::StructType::get(
+                ctx,
+                { llvm::Type::getFloatTy(ctx),
+                  llvm::Type::getFloatTy(ctx) }
+            );
+
+        case E_C64:
+            return llvm::StructType::get(
+                ctx,
+                { llvm::Type::getDoubleTy(ctx),
+                  llvm::Type::getDoubleTy(ctx) }
+            );
+
+        case E_BOOL: return llvm::Type::getInt1Ty(ctx);
+        case E_STR:  return llvm::PointerType::get(llvm::Type::getInt8Ty(ctx), 0);
+
+        default: return nullptr;
+    }
+}
+
+
+
 AllocaInst* CodeGen::createEntryAlloca(Function *F, llvm::Type *Ty, const Twine &name) {
     IRBuilder<> tmp(&F->getEntryBlock(), F->getEntryBlock().begin());
     return tmp.CreateAlloca(Ty, nullptr, name);
@@ -11,8 +117,6 @@ llvm::Type* CodeGen::lower_type(const ::Types* t){
         return prim_to_LLVM(pt->type);
     }
     if(auto *vt = dynamic_cast<const ::VectorType*>(t)){
-        // llvm::Type* elem = lower_type(vt->element_type.get());
-        // return PointerType::getUnqual(elem);
         llvm::Type *elem = lower_type(vt->element_type.get());
 
         std::string name = "__vec_" + std::to_string((uintptr_t)elem);
@@ -20,8 +124,12 @@ llvm::Type* CodeGen::lower_type(const ::Types* t){
         auto it = structs.find(name);
         if (it == structs.end()) {
             auto *ST = llvm::StructType::create(ctx, name);
-            ST->setBody({llvm::PointerType::getUnqual(elem),
-                     llvm::Type::getInt64Ty(ctx)});
+            ST->setBody({
+                llvm::PointerType::get(ctx, 0),
+                llvm::Type::getInt64Ty(ctx),
+                llvm::Type::getInt32Ty(ctx)
+            });
+
             structs[name] = ST;
             return ST;
         }
@@ -70,7 +178,6 @@ Value* CodeGen::boolToI1(IRBuilder<> &B, Value *v) {
 }
 
 Value* CodeGen::gen_expr(const Expression* e) {
-    // creating gen_expr for each ExprAst
     if (!e) return nullptr;
     if (auto *id = dynamic_cast<const IdentifierExpr*>(e)) {
         if (auto *A = lookup_var(id->name)) {
@@ -92,56 +199,59 @@ Value* CodeGen::gen_expr(const Expression* e) {
     if (dynamic_cast<const PiLiteral*>(e)) {
         return ConstantFP::get(llvm::Type::getDoubleTy(ctx), 3.141592653589793);
     }
-
-    if(auto *vec=dynamic_cast<const VectorLiteralExpr*>(e)){
+    if (auto *vec = dynamic_cast<const VectorLiteralExpr*>(e)) {
     size_t n = vec->elements.size();
-    
+    if (n == 0) {
+        errs() << "Empty vector literal not supported yet\n";
+        return nullptr;
+    }
+
     Value *firstElem = gen_expr(vec->elements[0].get());
     llvm::Type *elemTy = firstElem->getType();
-    
-    llvm::ArrayType *arrTy = llvm::ArrayType::get(elemTy, n);
-    Function *F = builder.GetInsertBlock()->getParent();
-    AllocaInst *arr = createEntryAlloca(F, arrTy, "vec.arr");
-    
-    Value *ptr0_store = builder.CreateInBoundsGEP(
-        arrTy, arr,
-        {ConstantInt::get(Type::getInt32Ty(ctx), 0),
-         ConstantInt::get(Type::getInt32Ty(ctx), 0)});
-    builder.CreateStore(firstElem, ptr0_store);
-    
-    for (size_t i = 1; i < n; i++) {
+    int elemId = typeIdFromLLVM(elemTy);
+    Value *elemIdVal = ConstantInt::get(Type::getInt32Ty(ctx), elemId);
+
+    Function *vecCreate = functions["vec_create"];
+    Value *vecPtr = builder.CreateCall(
+        vecCreate,
+        { elemIdVal, ConstantInt::get(Type::getInt64Ty(ctx), n) }
+    );
+
+    Function *indexFn = functions["vec_index_ptr"];
+
+    for (size_t i = 0; i < n; i++) {
         Value *elem = gen_expr(vec->elements[i].get());
-        Value *ptr = builder.CreateInBoundsGEP(
-            arrTy, arr,
-            {ConstantInt::get(Type::getInt32Ty(ctx), 0),
-             ConstantInt::get(Type::getInt32Ty(ctx), i)});
-        builder.CreateStore(elem, ptr);
+
+        Value *idxVal = ConstantInt::get(Type::getInt64Ty(ctx), i);
+        Value *elemPtr = builder.CreateCall(indexFn, { vecPtr, idxVal });
+
+
+        llvm::Type* T = elem->getType();
+        Value* typedPtr = builder.CreateBitCast(elemPtr, llvm::PointerType::get(T, 0));
+        builder.CreateStore(elem, typedPtr);
     }
-    
+
     llvm::StructType *vecTy = llvm::StructType::get(
         ctx,
-        {llvm::PointerType::get(elemTy,0), Type::getInt64Ty(ctx)}
+        {
+            llvm::PointerType::get(ctx, 0),
+            Type::getInt64Ty(ctx),
+            Type::getInt32Ty(ctx),
+            Type::getInt64Ty(ctx)
+        }
     );
-    
-    AllocaInst *vecStruct = createEntryAlloca(F, vecTy, "vec.struct");
-    
-    Value *ptr0 = builder.CreateInBoundsGEP(
-        arrTy, arr,
-        {ConstantInt::get(Type::getInt32Ty(ctx), 0),
-         ConstantInt::get(Type::getInt32Ty(ctx), 0)});
-    
-    Value *lenVal = ConstantInt::get(Type::getInt64Ty(ctx), n);
-    
-    // Insert fields into struct
-    Value *dataPtrSlot = builder.CreateStructGEP(vecTy, vecStruct, 0);
-    Value *lenSlot = builder.CreateStructGEP(vecTy, vecStruct, 1);
-    
-    builder.CreateStore(ptr0, dataPtrSlot);
-    builder.CreateStore(lenVal, lenSlot);
-    
-    return builder.CreateLoad(vecTy, vecStruct);
+
+    Value *header = UndefValue::get(vecTy);
+
+    header = builder.CreateInsertValue(header, vecPtr, {0});
+    header = builder.CreateInsertValue(header, ConstantInt::get(Type::getInt64Ty(ctx), n), {1});
+    header = builder.CreateInsertValue(header, elemIdVal, {2});
+    header = builder.CreateInsertValue(header, ConstantInt::get(Type::getInt64Ty(ctx), n), {3});
+
+    return header;
 }
-            
+
+           
     if (auto *str = dynamic_cast<const ::StringLiteral*>(e)){
         return builder.CreateGlobalString(str->value);
     }
@@ -176,28 +286,34 @@ Value* CodeGen::gen_expr(const Expression* e) {
             return nullptr;
         }
         if (bin->op == BinaryOp::OR) {
-        
-            if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
-                //TODO: implement cancetanation
-                //Function* concatFn = functions["vector_concat"];
-                errs() << "Vector concatenation not yet implemented\n";
-                //return builder.CreateCall(concatFn, { L, R });
-
-                return nullptr;
-                
-                auto it = functions.find("vector_concat");
-                if (it == functions.end()) {
-                    errs() << "Internal error: builtin vector_concat not declared\n";
-                    return nullptr;
+            if (auto *LStructTy = llvm::dyn_cast<llvm::StructType>(L->getType())) {
+                if (auto *RStructTy = llvm::dyn_cast<llvm::StructType>(R->getType())) {
+                    Value *dataPtr = builder.CreateExtractValue(L, {0});
+                    llvm::Type *elemTy = dataPtr->getType();
+            
+                    Function* concatFn;
+                    if (elemTy->isIntegerTy(64)) {
+                        auto it = functions.find("vector_concat_i64");
+                        if (it == functions.end()) {
+                            errs() << "Internal error: vector_concat_i64 not declared\n";
+                            return nullptr;
+                        }
+                        concatFn = it->second;
+                    } else if (elemTy->isDoubleTy()) {
+                        auto it = functions.find("vector_concat_f64");
+                        if (it == functions.end()) {
+                            errs() << "Internal error: vector_concat_f64 not declared\n";
+                            return nullptr;
+                        }
+                        concatFn = it->second;
+                    } else {
+                        errs() << "Unsupported vector element type for concatenation\n";
+                        return nullptr;
+                    }
+            
+                    std::vector<Value*> argsV = {L, R};
+                    return builder.CreateCall(concatFn, argsV, "concat.result");
                 }
-
-                Function* concatFn = it->second;
-
-                std::vector<Value*> argsV;
-                argsV.push_back(L);
-                argsV.push_back(R);
-
-                return builder.CreateCall(concatFn,argsV,concatFn->getReturnType()->isVoidTy() ? "" : "concat.calltmp");
             }
         }
         if(bin->op == BinaryOp::CONVOLUTION){
@@ -221,8 +337,9 @@ Value* CodeGen::gen_expr(const Expression* e) {
 
                 return builder.CreateCall(convolveFn,argsV,convolveFn->getReturnType()->isVoidTy() ? "" : "concat.calltmp");
             }
-        }
 
+            
+        }
         if(bin->op == BinaryOp::EXPONENTIATE){
             if (L->getType()->isIntegerTy() && R->getType()->isIntegerTy()) {
                 //TODO: implement convulution
@@ -276,33 +393,13 @@ Value* CodeGen::gen_expr(const Expression* e) {
         }
     }
     if (auto *idx = dynamic_cast<const IndexExpression*>(e)) {
-        Value *base = gen_expr(idx->object.get());
-        Value *i = gen_expr(idx->index.get());
-        if (!base||!i) return nullptr;
-        llvm::Type *ty = base->getType();
+        Value* vecHeader = gen_expr(idx->object.get());
+        Value* index     = gen_expr(idx->index.get());
 
-    if (auto *vecTy = llvm::dyn_cast<llvm::StructType>(ty)) {
-
-        Value *dataPtr = builder.CreateExtractValue(base, {0});
-
-        llvm::Type *elemPtrTy = dataPtr->getType();
-
-        Value *elemPtr = builder.CreateInBoundsGEP(
-            elemPtrTy,
-            dataPtr,
-            i
-        );
-
-        return builder.CreateLoad(elemPtrTy, elemPtr);
+        VectorInfo V = unpackVector(vecHeader);
+        return loadVectorElement(V, index);
     }
-
-        // if (base->getType()->isPointerTy()) {
-        //     llvm::Type *elem = llvm::cast<llvm::PointerType>(base->getType());
-        //     Value *ptr = builder.CreateInBoundsGEP(elem, base, i);
-        //     return builder.CreateLoad(elem, ptr);
-        // }
-        return nullptr;
-    }
+         
     if (auto *cast = dynamic_cast<const TypeCastExpr*>(e)) {
         Value *v = gen_expr(cast->expr.get()); 
         llvm::Type *dst = lower_type(cast->type.get());
@@ -323,7 +420,7 @@ Value* CodeGen::gen_expr(const Expression* e) {
 
         if (call->callee == "len") {
             Value *vecVal = gen_expr(call->arguments[0].get());
-            return builder.CreateExtractValue(vecVal, {1}); // length
+            return builder.CreateExtractValue(vecVal, {1});
         }
 
         if (call->callee == "isempty") {
@@ -379,28 +476,28 @@ Value* CodeGen::gen_expr(const Expression* e) {
             return nullptr;
         return builder.CreateCall(F, argsV, F->getReturnType()->isVoidTy()? "" : "calltmp");
     }
-    if (auto *vec = dynamic_cast<const VectorLiteralExpr*>(e)) {
-        if (vec->elements.empty()) {
-            return ConstantPointerNull::get(llvm::PointerType::get(ctx,0));
-        }
-        Value *first = gen_expr(vec->elements[0].get());
-        llvm::Type *elemTy = first->getType(); 
-        size_t n = vec->elements.size();
-        llvm::Type *arrTy = ArrayType::get(elemTy, n);
-        Function *curF = builder.GetInsertBlock()->getParent();
-        AllocaInst *tmp = createEntryAlloca(curF, arrTy, "vec.lit");
-        for (size_t i=0;i<n;++i) {
-            Value *vi = gen_expr(vec->elements[i].get()); 
-            Value *idxs[] = {ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0),
-                                ConstantInt::get(llvm::Type::getInt32Ty(ctx), 
-                                (uint32_t)i)};
-            Value *ptr = builder.CreateInBoundsGEP(arrTy, tmp, idxs);
-            builder.CreateStore(vi, ptr);
-        }
-        Value *zero = ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0);
-        Value *ptr0 = builder.CreateInBoundsGEP(arrTy, tmp, {zero, zero});
-        return ptr0;
-    }
+    // if (auto *vec = dynamic_cast<const VectorLiteralExpr*>(e)) {
+    //     if (vec->elements.empty()) {
+    //         return ConstantPointerNull::get(llvm::PointerType::get(ctx,0));
+    //     }
+    //     Value *first = gen_expr(vec->elements[0].get());
+    //     llvm::Type *elemTy = first->getType(); 
+    //     size_t n = vec->elements.size();
+    //     llvm::Type *arrTy = ArrayType::get(elemTy, n);
+    //     Function *curF = builder.GetInsertBlock()->getParent();
+    //     AllocaInst *tmp = createEntryAlloca(curF, arrTy, "vec.lit");
+    //     for (size_t i=0;i<n;++i) {
+    //         Value *vi = gen_expr(vec->elements[i].get()); 
+    //         Value *idxs[] = {ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0),
+    //                             ConstantInt::get(llvm::Type::getInt32Ty(ctx), 
+    //                             (uint32_t)i)};
+    //         Value *ptr = builder.CreateInBoundsGEP(arrTy, tmp, idxs);
+    //         builder.CreateStore(vi, ptr);
+    //     }
+    //     Value *zero = ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0);
+    //     Value *ptr0 = builder.CreateInBoundsGEP(arrTy, tmp, {zero, zero});
+    //     return ptr0;
+    // }
     if (auto *rng = dynamic_cast<const RangeExpr*>(e)) {
         llvm::StructType *RT = llvm::StructType::get(ctx,
                                                      {llvm::Type::getInt64Ty(ctx),
@@ -474,23 +571,45 @@ void CodeGen::gen_stmt(const Statement* s,Function* fn){
         }
         return;
     }
-    if (auto *asgn = dynamic_cast<const Assignment*>(s)) { 
-        for (size_t i=0;i<asgn->targets.size();++i) { 
-            auto *A = lookup_var(asgn->targets[i]); 
-            Value *rhs = gen_expr(asgn->values[i].get()); 
-            if (!A || !rhs) continue;
-            if (rhs->getType() != A->getAllocatedType()) {
-                if (rhs->getType()->isIntegerTy() &&
-                    A->getAllocatedType()->isFloatingPointTy()) 
-                    rhs = builder.CreateSIToFP(rhs, A->getAllocatedType());
-                else if (rhs->getType()->isFloatingPointTy() &&
-                        A->getAllocatedType()->isIntegerTy())
-                    rhs = builder.CreateFPToSI(rhs, A->getAllocatedType());
+    if (auto *asgn = dynamic_cast<const Assignment*>(s)) {
+        for (size_t i = 0; i < asgn->targets.size(); ++i) {
+
+            Expression* target = asgn->targets[i].get();
+            Value* rhs = gen_expr(asgn->values[i].get());
+            if (!rhs) continue;
+
+            if (auto* id = dynamic_cast<IdentifierExpr*>(target)) {
+                AllocaInst* A = lookup_var(id->name);
+                if (!A) {
+                    errs() << "Undefined variable: " << id->name << "\n";
+                    continue;
+                }
+
+                if (rhs->getType() != A->getAllocatedType()) {
+                    if (rhs->getType()->isIntegerTy() &&
+                        A->getAllocatedType()->isFloatingPointTy())
+                        rhs = builder.CreateSIToFP(rhs, A->getAllocatedType());
+                    else if (rhs->getType()->isFloatingPointTy() &&
+                         A->getAllocatedType()->isIntegerTy())
+                        rhs = builder.CreateFPToSI(rhs, A->getAllocatedType());
+                }
+
+                builder.CreateStore(rhs, A);
+                continue;
             }
-            builder.CreateStore(rhs, A); 
-        } 
+            if (auto *idx = dynamic_cast<IndexExpression*>(target)) {
+                Value* vecHeader = gen_expr(idx->object.get());
+                Value* index     = gen_expr(idx->index.get());
+
+                VectorInfo V = unpackVector(vecHeader);
+                storeVectorElement(V, index, rhs);
+                continue;
+            }
+            errs() << "Invalid assignment target (not lvalue)\n";
+        }
         return;
     }
+
     if (auto *es = dynamic_cast<const ExprStmt*>(s)) {
         gen_expr(es->expr.get());
         return; 
@@ -649,8 +768,8 @@ Function* CodeGen::declare_function(const FunctionDecl* funcDecl){
     return F;
     return nullptr;
 }
+
 void CodeGen::define_function(const FunctionDecl* funcDecl){
-    //Function *F = declare_function(funcDecl);
     Function *F = functions[funcDecl->name];
     BasicBlock *BB = BasicBlock::Create(ctx, "entry", F);
     builder.SetInsertPoint(BB);
@@ -666,15 +785,27 @@ void CodeGen::define_function(const FunctionDecl* funcDecl){
     if (funcDecl->body){
         gen_block(funcDecl->body.get(), F);
     }
-    if (!BB->getTerminator()) {
-        if (F->getReturnType()->isVoidTy()){
+    // if (!BB->getTerminator()) {
+    //     if (F->getReturnType()->isVoidTy()){
+    //         builder.CreateRetVoid();
+    //     } else if (F->getReturnType()->isIntegerTy()){
+    //         builder.CreateRet(ConstantInt::get(F->getReturnType(), 0));
+    //     } else{
+    //         builder.CreateUnreachable();
+    //     }
+    // }
+
+    BasicBlock *curBB = builder.GetInsertBlock();
+    if (curBB && !curBB->getTerminator()) {
+        if (F->getReturnType()->isVoidTy()) {
             builder.CreateRetVoid();
-        } else if (F->getReturnType()->isIntegerTy()){
+        } else if (F->getReturnType()->isIntegerTy()) {
             builder.CreateRet(ConstantInt::get(F->getReturnType(), 0));
-        } else{
+        } else {
             builder.CreateUnreachable();
         }
     }
+
     pop_scope();
     string err;
     raw_string_ostream rso(err);
@@ -754,6 +885,12 @@ void CodeGen::declare_builtin_functions(){
     Function* printFn = declare_print();
     functions["print"] = printFn;
     functions["dbg"] = printFn;
+    functions["vec_create"]     = declare_vec_create();
+    functions["vec_resize"]     = declare_vec_resize();
+    functions["vec_index_ptr"]  = declare_vec_index_ptr();
+    functions["vec_free"]       = declare_vec_free();
+    functions["vec_push"]       = declare_vec_push();
+
 }
 
 Function* CodeGen::declare_print(){
@@ -772,3 +909,180 @@ Function* CodeGen::declare_print(){
     return printFn;
 
 }
+
+Function* CodeGen::declare_vec_create() {
+    FunctionType *FT = FunctionType::get(
+        PointerType::get(Type::getInt8Ty(ctx), 0),
+        { Type::getInt32Ty(ctx), Type::getInt64Ty(ctx) },
+        false
+    );
+    return Function::Create(FT, llvm::Function::ExternalLinkage, "vec_create", mod.get());
+}
+
+
+Function* CodeGen::declare_vec_resize() {
+    FunctionType *FT = FunctionType::get(
+        Type::getVoidTy(ctx),
+        {
+            PointerType::get(Type::getInt8Ty(ctx), 0),
+            Type::getInt64Ty(ctx)
+        },
+        false
+    );
+
+    return Function::Create(
+        FT,
+        Function::ExternalLinkage,
+        "vec_resize",
+        mod.get()
+    );
+}
+
+Function* CodeGen::declare_vec_index_ptr() {
+    FunctionType *FT = FunctionType::get(
+        PointerType::get(Type::getInt8Ty(ctx), 0),
+        {
+            PointerType::get(Type::getInt8Ty(ctx), 0),
+            Type::getInt64Ty(ctx)
+        },
+        false
+    );
+
+    return Function::Create(
+        FT,
+        Function::ExternalLinkage,
+        "vec_index_ptr",
+        mod.get()
+    );
+}
+
+Function* CodeGen::declare_vec_free() {
+    FunctionType *FT = FunctionType::get(
+        Type::getVoidTy(ctx),
+        {
+            PointerType::get(Type::getInt8Ty(ctx), 0)
+        },
+        false
+    );
+
+    return Function::Create(
+        FT,
+        Function::ExternalLinkage,
+        "vec_free",
+        mod.get()
+    );
+}
+
+Function* CodeGen::declare_vec_push() {
+    FunctionType *FT = FunctionType::get(
+        Type::getVoidTy(ctx),
+        {
+            PointerType::get(Type::getInt8Ty(ctx), 0),
+            PointerType::get(Type::getInt8Ty(ctx), 0)
+        },
+        false
+    );
+
+    return Function::Create(
+        FT,
+        Function::ExternalLinkage,
+        "vec_push",
+        mod.get()
+    );
+}
+
+VectorInfo CodeGen::unpackVector(Value* vecHeader) {
+    VectorInfo v;
+    v.header   = vecHeader;
+    v.dataPtr  = builder.CreateExtractValue(vecHeader, {0});
+    v.length   = builder.CreateExtractValue(vecHeader, {1});
+    v.typeId   = builder.CreateExtractValue(vecHeader, {2});
+    v.capacity = builder.CreateExtractValue(vecHeader, {3});
+    return v;
+}
+
+Value* CodeGen::loadVectorElement(const VectorInfo &V, Value* index) {
+    Function* F = builder.GetInsertBlock()->getParent();
+    Function* indexFn = functions["vec_index_ptr"];
+
+    Value* rawPtr = builder.CreateCall(indexFn, {V.dataPtr, index});
+
+    BasicBlock* mergeBB = BasicBlock::Create(ctx, "vec.load.merge", F);
+    AllocaInst* result = createEntryAlloca(F, Type::getInt64Ty(ctx), "vec_load_tmp");
+
+    auto* sw = builder.CreateSwitch(V.typeId, mergeBB, 6);
+
+    auto addCase = [&](int tag, llvm::Type* T, auto convert){
+        BasicBlock* caseBB = BasicBlock::Create(ctx, "vec.load", F);
+        sw->addCase(ConstantInt::get(Type::getInt32Ty(ctx), tag), caseBB);
+        builder.SetInsertPoint(caseBB);
+
+        Value* castPtr = builder.CreateBitCast(rawPtr, PointerType::get(T, 0));
+        Value* loaded = builder.CreateLoad(T, castPtr);
+        Value* finalV = convert(loaded);
+        builder.CreateStore(finalV, result);
+        builder.CreateBr(mergeBB);
+    };
+
+    addCase(E_I8, Type::getInt8Ty(ctx),
+            [&](Value* x){ return builder.CreateSExt(x, Type::getInt64Ty(ctx)); });
+
+    addCase(E_I32, Type::getInt32Ty(ctx),
+            [&](Value* x){ return builder.CreateSExt(x, Type::getInt64Ty(ctx)); });
+
+    addCase(E_I64, Type::getInt64Ty(ctx),
+            [&](Value* x){ return x; });
+
+    addCase(E_F32, Type::getFloatTy(ctx),
+            [&](Value* x){ return builder.CreateFPToSI(x, Type::getInt64Ty(ctx)); });
+
+    addCase(E_F64, Type::getDoubleTy(ctx),
+            [&](Value* x){ return builder.CreateFPToSI(x, Type::getInt64Ty(ctx)); });
+
+    addCase(E_STR, PointerType::get(Type::getInt8Ty(ctx), 0),
+            [&](Value* x){ return builder.CreatePtrToInt(x, Type::getInt64Ty(ctx)); });
+
+    builder.SetInsertPoint(mergeBB);
+    return builder.CreateLoad(Type::getInt64Ty(ctx), result);
+}
+
+void CodeGen::storeVectorElement(const VectorInfo &V, Value* index, Value* rhs) {
+    Function* F = builder.GetInsertBlock()->getParent();
+    Function* indexFn = functions["vec_index_ptr"];
+    Value* rawPtr = builder.CreateCall(indexFn, {V.dataPtr, index});
+
+    BasicBlock* mergeBB = BasicBlock::Create(ctx, "vec.store.merge", F);
+    auto* sw = builder.CreateSwitch(V.typeId, mergeBB, 6);
+
+    auto addCase = [&](int tag, llvm::Type* T, auto convert){
+        BasicBlock* caseBB = BasicBlock::Create(ctx, "vec.store", F);
+        sw->addCase(ConstantInt::get(Type::getInt32Ty(ctx), tag), caseBB);
+        builder.SetInsertPoint(caseBB);
+
+        Value* castPtr = builder.CreateBitCast(rawPtr, PointerType::get(T, 0));
+        builder.CreateStore(convert(rhs), castPtr);
+
+        builder.CreateBr(mergeBB);
+    };
+
+    addCase(E_I8, Type::getInt8Ty(ctx),
+            [&](Value* x){ return builder.CreateTrunc(x, Type::getInt8Ty(ctx)); });
+
+    addCase(E_I32, Type::getInt32Ty(ctx),
+            [&](Value* x){ return builder.CreateTrunc(x, Type::getInt32Ty(ctx)); });
+
+    addCase(E_I64, Type::getInt64Ty(ctx),
+            [&](Value* x){ return builder.CreateIntCast(x, Type::getInt64Ty(ctx), true); });
+
+    addCase(E_F32, Type::getFloatTy(ctx),
+            [&](Value* x){ return builder.CreateSIToFP(x, Type::getFloatTy(ctx)); });
+
+    addCase(E_F64, Type::getDoubleTy(ctx),
+            [&](Value* x){ return builder.CreateSIToFP(x, Type::getDoubleTy(ctx)); });
+
+    addCase(E_STR, PointerType::get(Type::getInt8Ty(ctx), 0),
+            [&](Value* x){ return builder.CreateIntToPtr(x, PointerType::get(Type::getInt8Ty(ctx),0)); });
+
+    builder.SetInsertPoint(mergeBB);
+}
+

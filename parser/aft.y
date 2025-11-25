@@ -450,7 +450,7 @@ identifier_list:
 assignment:
     IDENTIFIER ASSIGN expression {
         Assignment* node = new Assignment();
-        node->targets.push_back(std::string($1));
+        node->targets.push_back(ExprPtr(new IdentifierExpr(std::string($1))));
         free($1);
         node->values.push_back(ExprPtr($3));
         $$ = node;
@@ -461,7 +461,7 @@ assignment:
         Assignment* node = new Assignment();
         if ($2) {
             for (auto name : *$2) {
-                node->targets.push_back(name);
+                node->targets.push_back(ExprPtr(new IdentifierExpr(name)));
             }
             delete $2;
         }
@@ -473,6 +473,19 @@ assignment:
         }
         $$ = node;
     }
+    | expression LEFTSQUARE expression RIGHTSQUARE ASSIGN expression
+    {
+        Assignment* node = new Assignment();
+        node->targets.push_back(
+            ExprPtr(new IndexExpression(
+                ExprPtr($1),
+                ExprPtr($3)
+            ))
+        );
+        node->values.push_back(ExprPtr($6));
+        $$ = node;
+    }
+
     ;
 
 if_stmt:
