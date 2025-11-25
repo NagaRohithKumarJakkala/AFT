@@ -446,6 +446,7 @@ void SemanticAnalyzer::handle_expression(Expression* expr){
     }
     
     if(auto bin = dynamic_cast<BinaryExpression*>(expr)){
+        printf("[semantic] info: Handling binary expression at line %d\n", current_line);
         TypePtr left_type = infer_type(bin->left.get());
         TypePtr right_type = infer_type(bin->right.get());
         check_binary_operation(bin->op, left_type, right_type, current_line);
@@ -608,8 +609,9 @@ bool SemanticAnalyzer::can_cast_to(const TypePtr& from, const TypePtr& to){
 }
 
 void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, const TypePtr& right, int line){
+    printf("[semantic] info: Checking binary operation at line %d\n", line);
     if(!left || !right) return;
-    
+    printf("[semantic] info: Left type: %s, Right type: %s\n", type_to_string(left).c_str(), type_to_string(right).c_str());
     switch(op){
         case BinaryOp::PLUS:
         case BinaryOp::MINUS:
@@ -626,7 +628,9 @@ void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, 
         case BinaryOp::XOR:
         case BinaryOp::LEFTSHIFT:
         case BinaryOp::RIGHTSHIFT:
+        printf("[semantic] error: Bitwise operation check\n");
             if(!is_integer_type(left) || !is_integer_type(right)){
+                printf("[semantic] error: Bitwise operation requires integer types\n");
                 report_error("Bitwise operation requires integer types");
             }
             break;
