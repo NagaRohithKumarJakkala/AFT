@@ -46,15 +46,14 @@ int main(int argc, char** argv) {
     }
 
 
-    Program* inbuilt_functions = parse_new_program("functions/inbuilt.aft");
+    Program* general_block = parse_new_program("functions/inbuilt.aft");
     Program* user = parse_new_program(argv[1]);
 
 
-    merge_programs(user, inbuilt_functions);
-
+    merge_programs( general_block , user);
 
     SemanticAnalyzer semantic_analyzer;
-    semantic_analyzer.check(user);
+    semantic_analyzer.check(general_block);
 
 
     if(semantic_analyzer.has_errors()){
@@ -64,7 +63,7 @@ int main(int argc, char** argv) {
 
 
     CodeGen CG(semantic_analyzer.get_symbol_table(), "my_program");
-    CG.gen_program(ast_root);
+    CG.gen_program(general_block);
     CG.mod->print(outs(), nullptr);
     return 0;
 }
