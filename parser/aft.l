@@ -22,13 +22,13 @@ BINARY [01]
 OCTAL [0-7]
 
 
-ESCAPE_SEQUENCE \\\\(['"\\ntr0]|x{HEX}{1,2})
+ESCAPE_SEQUENCE  \\(['"\\ntr0]|x{HEX}{1,2})
 STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
 
 %%
 
 
-"//".* ;
+"//"[^\n]*        { /* skip */ }
 "/*"                    { BEGIN(COMMENT); }
 <COMMENT>{
     "*/"                { BEGIN(INITIAL); }
@@ -39,16 +39,28 @@ STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
 }
 
 
-\"                      { BEGIN(STRING); yymore(); }
+<INITIAL>\"          { BEGIN(STRING); yytext[0] = '\0'; }
+
 <STRING>{
-    {STRING_CONTENT}    { yymore(); }
-    \\\"                { yymore(); }
-    \"                  { BEGIN(INITIAL);
-                          yylval.sval = strndup(yytext + 1, yyleng - 2);
-                          return STRING; }
-    \n                  { printf("Error: Unterminated string literal at line %d\n", yylineno); BEGIN(INITIAL); }
-    <<EOF>>             { printf("Error: Unterminated string literal\n"); return 0; }
+    {ESCAPE_SEQUENCE} { /* valid escape, consume normally */ }
+    [^\\\"\n]+        { /* ordinary chars */ }
+    \\(.)             { /* any escaped char */ }
+    \"                {
+                        BEGIN(INITIAL);
+                        yylval.sval = strdup(yytext);
+                        return STRING;
+                     }
+    \n                {
+                        printf("Error: Unterminated string literal at line %d\n", yylineno);
+                        BEGIN(INITIAL);
+                        /* optionally return error token */
+                     }
+    <<EOF>>           {
+                        printf("Error: Unterminated string literal\n");
+                        return 0;
+                     }
 }
+
 
 
 
