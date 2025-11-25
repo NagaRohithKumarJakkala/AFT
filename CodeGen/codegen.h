@@ -32,6 +32,7 @@ struct CodeGen{
     AllocaInst* lookup_var(const std::string &name);
     unordered_map<string,Function*> functions;
     unordered_map<string,llvm::StructType*> structs;
+    void declare_builtin_functions();
 };
 
 

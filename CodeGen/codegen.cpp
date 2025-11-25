@@ -519,6 +519,9 @@ void CodeGen::define_function(const FunctionDecl* funcDecl){
 
 }
 void CodeGen::gen_program(const Program* prog){
+
+    declare_builtin_functions();
+
     for (auto &B : prog->Blocks){
         if (auto *S = dynamic_cast<StructDecl*>(B.get())) {
             register_struct(S);
@@ -579,4 +582,8 @@ void CodeGen::bind_var(const std::string &name, AllocaInst* A) {
     varScopes.back()[name] = A;
     Symbol* s = sym_table.find(name);
     if (s) s->irValue = A;
+}
+
+void CodeGen::declare_builtin_functions(){
+    
 }
