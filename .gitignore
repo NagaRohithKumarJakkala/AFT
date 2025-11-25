@@ -1,6 +1,7 @@
 * .yy.c
 * .tab.c
 * .tab.h
+parser/lex.yy.c
 * .o
 * a.out
 * .exe
