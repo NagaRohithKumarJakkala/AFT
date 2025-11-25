@@ -1,0 +1,7 @@
+fn sum_of_abs(a:i64,b:i64)i64{
+    return abs(a)+abs(b);
+}
+
+fn main(){
+    let b = sum_of_abs(2,3);
+}

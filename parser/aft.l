@@ -55,6 +55,10 @@ STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
 "..="               { return RANGEUPTO; }
 ".."                { return RANGE; }
 
+"**"                { return EXPONENTIATE;}
+".*"                { return CONVOLUTION;}
+"~"                 { return REVERSE; }
+
 {DIGIT}+"."{DIGIT}+{EXPONENT}? { yylval.sval = strdup(yytext); return FLOAT; }
 "."{DIGIT}+{EXPONENT}?              { yylval.sval = strdup(yytext); return FLOAT; }
 {DIGIT}+{EXPONENT}                  { yylval.sval = strdup(yytext); return FLOAT; }
@@ -108,9 +112,6 @@ STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
 ";"                 { return SEMICOLON;}
 "."                 { return DOT; }
 
-"**"                { return EXPONENTIATE;}
-".*"                { return CONVOLUTION;}
-"~"                 { return REVERSE; }
 
 "i8"                { return I8; }
 "i16"               { return I16; }

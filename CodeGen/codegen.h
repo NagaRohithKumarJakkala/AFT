@@ -33,7 +33,6 @@ struct CodeGen{
     unordered_map<string,Function*> functions;
     unordered_map<string,llvm::StructType*> structs;
     void declare_builtin_functions();
+    Function* declare_print();
+    Function* declare_dbg();
 };
-
-
-

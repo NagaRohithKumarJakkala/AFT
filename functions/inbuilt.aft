@@ -1,0 +1,6 @@
+fn abs( a:i64) i64{
+    if(a<0){
+        return -a; 
+    }
+    return a;
+}

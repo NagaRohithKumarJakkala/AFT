@@ -1,6 +1,6 @@
-#line 1 "lex.yy.c"
+#line 1 "parser/lex.yy.c"
 
-#line 3 "lex.yy.c"
+#line 3 "parser/lex.yy.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -383,25 +383,25 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[197] =
     {   0,
-        0,    0,    0,    0,    0,    0,   98,   96,   25,   95,
-       40,    7,   30,   41,   49,   50,   28,   26,   46,   27,
-       55,   29,   20,   20,   53,   54,   33,   45,   34,   94,
-       94,   51,   52,   39,   94,   94,   94,   94,   94,   94,
-       94,   94,   94,   94,   94,   94,   47,   42,   48,   58,
-        4,    6,    5,    8,   11,   10,   97,   25,   32,   37,
-       56,   57,   13,   15,    2,    1,    0,   20,    0,    0,
-       24,    0,    0,   43,   35,   31,   36,   44,   94,   93,
+        0,    0,    0,    0,    0,    0,   98,   96,   28,   95,
+       43,    7,   33,   44,   52,   53,   31,   29,   49,   30,
+       58,   32,   23,   23,   56,   57,   36,   48,   37,   94,
+       94,   54,   55,   42,   94,   94,   94,   94,   94,   94,
+       94,   94,   94,   94,   94,   94,   50,   45,   51,   16,
+        4,    6,    5,    8,   11,   10,   97,   28,   35,   40,
+       14,   15,   13,   18,    2,    1,    0,   23,    0,    0,
+       27,    0,    0,   46,   38,   34,   39,   47,   94,   93,
        89,   94,   94,   94,   94,   94,   94,   94,   94,   94,
        94,   77,   94,   94,   94,   94,   59,   79,   80,   94,
 
-       94,   94,   94,   94,   94,   94,   64,   94,   38,    4,
-        3,    8,    0,    9,    0,   12,    0,   22,    1,   14,
-        0,   21,    0,   16,   17,   18,   19,   94,   94,   71,
+       94,   94,   94,   94,   94,   94,   64,   94,   41,    4,
+        3,    8,    0,    9,    0,   12,    0,   25,    1,   17,
+        0,   24,    0,   19,   20,   21,   22,   94,   94,   71,
        72,   94,   94,   94,   69,   70,   94,   83,   94,   60,
        61,   62,   75,   94,   94,   94,   74,   94,   94,   65,
-       66,   67,   94,    0,    0,   15,    0,    0,    0,   23,
+       66,   67,   94,    0,    0,   18,    0,    0,    0,   26,
        73,   94,   94,   94,   81,   86,   94,   63,   94,   94,
-       94,   94,   87,   68,   94,    8,    0,   14,   91,   76,
+       94,   94,   87,   68,   94,    8,    0,   17,   91,   76,
        94,   88,   94,   94,   94,   94,   82,    8,   94,   84,
        78,   92,   85,   94,   90,    0
 
@@ -637,17 +637,17 @@ static int yy_more_len = 0;
 #define YY_MORE_ADJ (yy_more_len)
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "aft.l"
-#line 2 "aft.l"
+#line 1 "parser/aft.l"
+#line 2 "parser/aft.l"
 #include "aft.tab.h"
 #include <string.h>
 
 int col_num = 0;
 
 #define YY_USER_ACTION col_num += yyleng;
-#line 648 "lex.yy.c"
+#line 648 "parser/lex.yy.c"
 
-#line 650 "lex.yy.c"
+#line 650 "parser/lex.yy.c"
 
 #define INITIAL 0
 #define COMMENT 1
@@ -866,11 +866,11 @@ YY_DECL
 		}
 
 	{
-#line 28 "aft.l"
+#line 28 "parser/aft.l"
 
 
 
-#line 873 "lex.yy.c"
+#line 873 "parser/lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -945,60 +945,60 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 31 "aft.l"
+#line 31 "parser/aft.l"
 ;
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 32 "aft.l"
+#line 32 "parser/aft.l"
 { BEGIN(COMMENT); }
 	YY_BREAK
 
 case 3:
 YY_RULE_SETUP
-#line 34 "aft.l"
+#line 34 "parser/aft.l"
 { BEGIN(INITIAL); }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 35 "aft.l"
+#line 35 "parser/aft.l"
 { /* Skip comment content */ }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 36 "aft.l"
+#line 36 "parser/aft.l"
 { /* Skip lone asterisk */ }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 37 "aft.l"
+#line 37 "parser/aft.l"
 { /* Skip new line */ }
 	YY_BREAK
 case YY_STATE_EOF(COMMENT):
-#line 38 "aft.l"
+#line 38 "parser/aft.l"
 { printf("Error: Unterminated comment\n"); return 0; }
 	YY_BREAK
 
 case 7:
 YY_RULE_SETUP
-#line 42 "aft.l"
+#line 42 "parser/aft.l"
 { BEGIN(STRING); yymore(); }
 	YY_BREAK
 
 case 8:
 YY_RULE_SETUP
-#line 44 "aft.l"
+#line 44 "parser/aft.l"
 { yymore(); }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 45 "aft.l"
+#line 45 "parser/aft.l"
 { yymore(); }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 46 "aft.l"
+#line 46 "parser/aft.l"
 { BEGIN(INITIAL);
                           yylval.sval = strndup(yytext + 1, yyleng - 2);
                           return STRING; }
@@ -1006,438 +1006,438 @@ YY_RULE_SETUP
 case 11:
 /* rule 11 can match eol */
 YY_RULE_SETUP
-#line 49 "aft.l"
+#line 49 "parser/aft.l"
 { printf("Error: Unterminated string literal at line %d\n", yylineno); BEGIN(INITIAL); }
 	YY_BREAK
 case YY_STATE_EOF(STRING):
-#line 50 "aft.l"
+#line 50 "parser/aft.l"
 { printf("Error: Unterminated string literal\n"); return 0; }
 	YY_BREAK
 
 case 12:
 YY_RULE_SETUP
-#line 55 "aft.l"
+#line 55 "parser/aft.l"
 { return RANGEUPTO; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 56 "aft.l"
+#line 56 "parser/aft.l"
 { return RANGE; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 58 "aft.l"
-{ yylval.sval = strdup(yytext); return FLOAT; }
+#line 58 "parser/aft.l"
+{ return EXPONENTIATE;}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 59 "aft.l"
-{ yylval.sval = strdup(yytext); return FLOAT; }
+#line 59 "parser/aft.l"
+{ return CONVOLUTION;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 60 "aft.l"
-{ yylval.sval = strdup(yytext); return FLOAT; }
+#line 60 "parser/aft.l"
+{ return REVERSE; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 62 "aft.l"
-{  yylval.sval = strdup(yytext); return INTEGER; }
+#line 62 "parser/aft.l"
+{ yylval.sval = strdup(yytext); return FLOAT; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 63 "aft.l"
-{  yylval.sval = strdup(yytext); return INTEGER; }
+#line 63 "parser/aft.l"
+{ yylval.sval = strdup(yytext); return FLOAT; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 64 "aft.l"
-{  yylval.sval = strdup(yytext); return INTEGER; }
+#line 64 "parser/aft.l"
+{ yylval.sval = strdup(yytext); return FLOAT; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 65 "aft.l"
+#line 66 "parser/aft.l"
 {  yylval.sval = strdup(yytext); return INTEGER; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 67 "aft.l"
-{ yylval.sval = strdup(yytext); return COMPLEX;}
+#line 67 "parser/aft.l"
+{  yylval.sval = strdup(yytext); return INTEGER; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 68 "aft.l"
-{ yylval.sval = strdup(yytext); return COMPLEX;}
+#line 68 "parser/aft.l"
+{  yylval.sval = strdup(yytext); return INTEGER; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 69 "aft.l"
-{ yylval.sval = strdup(yytext); return COMPLEX;}
+#line 69 "parser/aft.l"
+{  yylval.sval = strdup(yytext); return INTEGER; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 70 "aft.l"
+#line 71 "parser/aft.l"
 { yylval.sval = strdup(yytext); return COMPLEX;}
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 72 "aft.l"
-{ /* Skip whitespace */ }
+#line 72 "parser/aft.l"
+{ yylval.sval = strdup(yytext); return COMPLEX;}
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 74 "aft.l"
-{ return PLUS;}
+#line 73 "parser/aft.l"
+{ yylval.sval = strdup(yytext); return COMPLEX;}
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 75 "aft.l"
-{ return MINUS;}
+#line 74 "parser/aft.l"
+{ yylval.sval = strdup(yytext); return COMPLEX;}
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 76 "aft.l"
-{ return MULTIPLY;}
+#line 76 "parser/aft.l"
+{ /* Skip whitespace */ }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 77 "aft.l"
-{ return DIVIDE;}
+#line 78 "parser/aft.l"
+{ return PLUS;}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 78 "aft.l"
-{ return MODULO;}
+#line 79 "parser/aft.l"
+{ return MINUS;}
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 80 "aft.l"
-{ return EQUALS; }
+#line 80 "parser/aft.l"
+{ return MULTIPLY;}
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 81 "aft.l"
-{ return NOTEQUAL; }
+#line 81 "parser/aft.l"
+{ return DIVIDE;}
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 82 "aft.l"
-{ return LESSTHAN; }
+#line 82 "parser/aft.l"
+{ return MODULO;}
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 83 "aft.l"
-{ return GREATERTHAN; }
+#line 84 "parser/aft.l"
+{ return EQUALS; }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 84 "aft.l"
-{ return LESSTHANEQUAL; }
+#line 85 "parser/aft.l"
+{ return NOTEQUAL; }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 85 "aft.l"
-{ return GREATERTHANEQUAL; }
+#line 86 "parser/aft.l"
+{ return LESSTHAN; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 87 "aft.l"
-{ return AND; }
+#line 87 "parser/aft.l"
+{ return GREATERTHAN; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 88 "aft.l"
-{ return OR; }
+#line 88 "parser/aft.l"
+{ return LESSTHANEQUAL; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 89 "aft.l"
-{ return XOR; }
+#line 89 "parser/aft.l"
+{ return GREATERTHANEQUAL; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 90 "aft.l"
-{ return NOT; }
+#line 91 "parser/aft.l"
+{ return AND; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 92 "aft.l"
-{ return BITWISEAND; }
+#line 92 "parser/aft.l"
+{ return OR; }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 93 "aft.l"
-{ return BITWISEOR; }
+#line 93 "parser/aft.l"
+{ return XOR; }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 94 "aft.l"
-{ return LEFTSHIFT; }
+#line 94 "parser/aft.l"
+{ return NOT; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 95 "aft.l"
-{ return RIGHTSHIFT; }
+#line 96 "parser/aft.l"
+{ return BITWISEAND; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 97 "aft.l"
-{ return ASSIGN; }
+#line 97 "parser/aft.l"
+{ return BITWISEOR; }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 98 "aft.l"
-{ return COMMA; }
+#line 98 "parser/aft.l"
+{ return LEFTSHIFT; }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 100 "aft.l"
-{ return LEFTBRACE; }
+#line 99 "parser/aft.l"
+{ return RIGHTSHIFT; }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 101 "aft.l"
-{ return RIGHTBRACE; }
+#line 101 "parser/aft.l"
+{ return ASSIGN; }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 102 "aft.l"
-{ return LEFTPAREN; }
+#line 102 "parser/aft.l"
+{ return COMMA; }
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 103 "aft.l"
-{ return RIGHTPAREN; }
+#line 104 "parser/aft.l"
+{ return LEFTBRACE; }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 104 "aft.l"
-{ return LEFTSQUARE; }
+#line 105 "parser/aft.l"
+{ return RIGHTBRACE; }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 105 "aft.l"
-{ return RIGHTSQUARE; }
+#line 106 "parser/aft.l"
+{ return LEFTPAREN; }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 107 "aft.l"
-{ return COLON;}
+#line 107 "parser/aft.l"
+{ return RIGHTPAREN; }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 108 "aft.l"
-{ return SEMICOLON;}
+#line 108 "parser/aft.l"
+{ return LEFTSQUARE; }
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 109 "aft.l"
-{ return DOT; }
+#line 109 "parser/aft.l"
+{ return RIGHTSQUARE; }
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 111 "aft.l"
-{ return EXPONENTIATE;}
+#line 111 "parser/aft.l"
+{ return COLON;}
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 112 "aft.l"
-{ return CONVOLUTION;}
+#line 112 "parser/aft.l"
+{ return SEMICOLON;}
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 113 "aft.l"
-{ return REVERSE; }
+#line 113 "parser/aft.l"
+{ return DOT; }
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 115 "aft.l"
+#line 116 "parser/aft.l"
 { return I8; }
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 116 "aft.l"
+#line 117 "parser/aft.l"
 { return I16; }
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 117 "aft.l"
+#line 118 "parser/aft.l"
 { return I32; }
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 118 "aft.l"
+#line 119 "parser/aft.l"
 { return I64; }
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 119 "aft.l"
+#line 120 "parser/aft.l"
 { return I128; }
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 121 "aft.l"
+#line 122 "parser/aft.l"
 { return U8; }
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 122 "aft.l"
+#line 123 "parser/aft.l"
 { return U16; }
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 123 "aft.l"
+#line 124 "parser/aft.l"
 { return U32; }
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 124 "aft.l"
+#line 125 "parser/aft.l"
 { return U64; }
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 125 "aft.l"
+#line 126 "parser/aft.l"
 { return U128; }
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 127 "aft.l"
+#line 128 "parser/aft.l"
 { return F32; }
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 128 "aft.l"
+#line 129 "parser/aft.l"
 { return F64; }
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
-#line 130 "aft.l"
+#line 131 "parser/aft.l"
 { return C32; }
 	YY_BREAK
 case 72:
 YY_RULE_SETUP
-#line 131 "aft.l"
+#line 132 "parser/aft.l"
 { return C64; }
 	YY_BREAK
 case 73:
 YY_RULE_SETUP
-#line 133 "aft.l"
+#line 134 "parser/aft.l"
 { return BOOL; }
 	YY_BREAK
 case 74:
 YY_RULE_SETUP
-#line 135 "aft.l"
+#line 136 "parser/aft.l"
 { return STR; }
 	YY_BREAK
 case 75:
 YY_RULE_SETUP
-#line 139 "aft.l"
+#line 140 "parser/aft.l"
 { return LET; }
 	YY_BREAK
 case 76:
 YY_RULE_SETUP
-#line 140 "aft.l"
+#line 141 "parser/aft.l"
 { return CONST; }
 	YY_BREAK
 case 77:
 YY_RULE_SETUP
-#line 141 "aft.l"
+#line 142 "parser/aft.l"
 { return FUNCTION; }
 	YY_BREAK
 case 78:
 YY_RULE_SETUP
-#line 142 "aft.l"
+#line 143 "parser/aft.l"
 { return RETURN; }
 	YY_BREAK
 case 79:
 YY_RULE_SETUP
-#line 143 "aft.l"
+#line 144 "parser/aft.l"
 { return IF; }
 	YY_BREAK
 case 80:
 YY_RULE_SETUP
-#line 144 "aft.l"
+#line 145 "parser/aft.l"
 { return IN; }
 	YY_BREAK
 case 81:
 YY_RULE_SETUP
-#line 145 "aft.l"
+#line 146 "parser/aft.l"
 { return ELSE; }
 	YY_BREAK
 case 82:
 YY_RULE_SETUP
-#line 146 "aft.l"
+#line 147 "parser/aft.l"
 { return WHILE; }
 	YY_BREAK
 case 83:
 YY_RULE_SETUP
-#line 147 "aft.l"
+#line 148 "parser/aft.l"
 { return FOR; }
 	YY_BREAK
 case 84:
 YY_RULE_SETUP
-#line 148 "aft.l"
+#line 149 "parser/aft.l"
 { return REPEAT; }
 	YY_BREAK
 case 85:
 YY_RULE_SETUP
-#line 149 "aft.l"
+#line 150 "parser/aft.l"
 { return STRUCT; }
 	YY_BREAK
 case 86:
 YY_RULE_SETUP
-#line 150 "aft.l"
+#line 151 "parser/aft.l"
 { return ENUM; }
 	YY_BREAK
 case 87:
 YY_RULE_SETUP
-#line 151 "aft.l"
+#line 152 "parser/aft.l"
 { return TRUE; }
 	YY_BREAK
 case 88:
 YY_RULE_SETUP
-#line 152 "aft.l"
+#line 153 "parser/aft.l"
 { return FALSE; }
 	YY_BREAK
 case 89:
 YY_RULE_SETUP
-#line 153 "aft.l"
+#line 154 "parser/aft.l"
 { return AS; }
 	YY_BREAK
 case 90:
 YY_RULE_SETUP
-#line 154 "aft.l"
+#line 155 "parser/aft.l"
 { return CONTINUE; }
 	YY_BREAK
 case 91:
 YY_RULE_SETUP
-#line 155 "aft.l"
+#line 156 "parser/aft.l"
 { return BREAK; }
 	YY_BREAK
 case 92:
 YY_RULE_SETUP
-#line 156 "aft.l"
+#line 157 "parser/aft.l"
 { return STATIC; }
 	YY_BREAK
 case 93:
 YY_RULE_SETUP
-#line 157 "aft.l"
+#line 158 "parser/aft.l"
 { return PI; }
 	YY_BREAK
 case 94:
 YY_RULE_SETUP
-#line 159 "aft.l"
+#line 160 "parser/aft.l"
 { yylval.sval = strdup(yytext); return IDENTIFIER;}
 	YY_BREAK
 case 95:
 /* rule 95 can match eol */
 YY_RULE_SETUP
-#line 161 "aft.l"
+#line 162 "parser/aft.l"
 { col_num = 0; }
 	YY_BREAK
 case 96:
 YY_RULE_SETUP
-#line 162 "aft.l"
+#line 163 "parser/aft.l"
 {
                             printf("Unexpected character: '%c' at line %d, column %d\n",
                                    yytext[0], yylineno, col_num);
@@ -1445,10 +1445,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 97:
 YY_RULE_SETUP
-#line 167 "aft.l"
+#line 168 "parser/aft.l"
 ECHO;
 	YY_BREAK
-#line 1451 "lex.yy.c"
+#line 1451 "parser/lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2465,7 +2465,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 167 "aft.l"
+#line 168 "parser/aft.l"
 
 
 int yywrap(){

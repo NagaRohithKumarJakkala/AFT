@@ -43,11 +43,7 @@ llvm::Type* CodeGen::prim_to_LLVM( PrimitiveTypeEnum p){
         case PrimitiveTypeEnum::C32: return llvm::StructType::get(ctx, {llvm::Type::getFloatTy(ctx), llvm::Type::getFloatTy(ctx)});
         case PrimitiveTypeEnum::C64: return llvm::StructType::get(ctx, {llvm::Type::getDoubleTy(ctx), llvm::Type::getDoubleTy(ctx)});
         case PrimitiveTypeEnum::BOOL: return llvm::Type::getInt1Ty(ctx);
-        // TODO:: do for the STR differently
-    
-        //case PrimitiveTypeEnum::STR: return llvm::Type::getInt8PtrTy(ctx);
-        case PrimitiveTypeEnum::STR: return llvm::PointerType::get(ctx,0);
-
+        case PrimitiveTypeEnum::STR:return llvm::PointerType::get(llvm::Type::getInt8Ty(ctx), 0);
 }
 return nullptr;
 }
@@ -116,31 +112,52 @@ Value* CodeGen::gen_expr(const Expression* e) {
         if (!L||!R){
             return nullptr;
         }
-        if (bin->op == BinaryOp::PLUS) {
+        if (bin->op == BinaryOp::OR) {
         
             if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
                 //TODO: implement cancetanation
+                //Function* concatFn = functions["vector_concat"];
                 errs() << "Vector concatenation not yet implemented\n";
+                //return builder.CreateCall(concatFn, { L, R });
+
                 return nullptr;
-            }
-            else{
-                errs()<< "not correct operands for this concatenation";
-                return nullptr;
-                exit(1);
+                
+                auto it = functions.find("vector_concat");
+                if (it == functions.end()) {
+                    errs() << "Internal error: builtin vector_concat not declared\n";
+                    return nullptr;
+                }
+
+                Function* concatFn = it->second;
+
+                std::vector<Value*> argsV;
+                argsV.push_back(L);
+                argsV.push_back(R);
+
+                return builder.CreateCall(concatFn,argsV,concatFn->getReturnType()->isVoidTy() ? "" : "concat.calltmp");
             }
         }
         if(bin->op == BinaryOp::CONVOLUTION){
             if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
-                //TODO: implement cancetanation
+                //TODO: implement convulution
+                //Function* concatFn = functions["vector_concat"];
                 errs() << "Vector convulution not yet implemented\n";
+                //return builder.CreateCall(concatFn, { L, R });
                 return nullptr;
+                auto it = functions.find("vector_convulution");
+                if (it == functions.end()) {
+                    errs() << "Internal error: builtin vector_concat not declared\n";
+                    return nullptr;
+                }
+
+                Function* convolveFn = it->second;
+
+                std::vector<Value*> argsV;
+                argsV.push_back(L);
+                argsV.push_back(R);
+
+                return builder.CreateCall(convolveFn,argsV,convolveFn->getReturnType()->isVoidTy() ? "" : "concat.calltmp");
             }
-            else{
-                errs()<< "not correct operands for this convulution";
-                return nullptr;
-                exit(1);
-            }
-             
         }
 
         bool fp = L->getType()->isFloatingPointTy() || R->getType()->isFloatingPointTy();
@@ -200,9 +217,42 @@ Value* CodeGen::gen_expr(const Expression* e) {
         return nullptr;
     }
     if (auto *call = dynamic_cast<const FunctionCallExpr*>(e)) {
+        if (call->callee == "print" || call->callee=="dbg") {
+            auto printfFn = functions["print"];
+
+            std::vector<Value*> args;
+
+            Expression* argExpr = call->arguments[0].get();
+            Value* val = gen_expr(argExpr);
+
+            if (!val) return nullptr;
+
+            if (val->getType()->isIntegerTy()) {
+                Value *fmt = builder.CreateGlobalString("%lld\n");
+                args.push_back(fmt);
+                args.push_back(val);
+            }
+            else if (val->getType()->isDoubleTy()) {
+                Value *fmt = builder.CreateGlobalString("%f\n");
+                args.push_back(fmt);
+                args.push_back(val);
+            }
+            else if (val->getType()->isPointerTy()) {
+                Value *fmt = builder.CreateGlobalString("%s\n");
+                args.push_back(fmt);
+                args.push_back(val);
+            }
+            else {
+                errs() << "Unsupported type for print\n";
+                return nullptr;
+            }
+            return builder.CreateCall(printfFn, args);
+        }
+
         auto it = functions.find(call->callee);
         if (it == functions.end()) return nullptr;
-        Function *F = it->second; vector<Value*> argsV;
+        Function *F = it->second;
+        vector<Value*> argsV;
         for (auto &a : call->arguments){
             argsV.push_back(gen_expr(a.get()));
         }
@@ -519,8 +569,8 @@ void CodeGen::define_function(const FunctionDecl* funcDecl){
 
 }
 void CodeGen::gen_program(const Program* prog){
-
     declare_builtin_functions();
+
 
     for (auto &B : prog->Blocks){
         if (auto *S = dynamic_cast<StructDecl*>(B.get())) {
@@ -585,5 +635,24 @@ void CodeGen::bind_var(const std::string &name, AllocaInst* A) {
 }
 
 void CodeGen::declare_builtin_functions(){
-    
+    Function* printFn = declare_print();
+    functions["print"] = printFn;
+    functions["dbg"] = printFn;
+}
+
+Function* CodeGen::declare_print(){
+        llvm::FunctionType* printfType = llvm::FunctionType::get(
+        llvm::IntegerType::getInt32Ty(ctx),
+        llvm::PointerType::get(llvm::Type::getInt8Ty(ctx),0),
+        true
+    );
+
+    llvm::Function* printFn = llvm::Function::Create(
+        printfType,
+        llvm::Function::ExternalLinkage,
+        "printf",
+        mod.get()
+    );
+    return printFn;
+
 }
