@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     }
 
 
-    Program* general_block = parse_new_program("functions/inbuilt.aft");
+    Program* general_block = parse_new_program("functions/inbuilt.af");
     Program* user = parse_new_program(argv[1]);
 
 

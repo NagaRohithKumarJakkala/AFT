@@ -1,7 +1,7 @@
 // Expected: No semantic errors
 fn main() i64 {
-    let x: vec<i64> = [1, 2, 3];
-    let y: vec<i64> = [4, 5, 6];
-    let z: vec<i64> = x + y;
+    let x: [i64] = [1, 2, 3];
+    let y: [i64] = [4, 5, 6];
+    let z: [i64] = x + y;
     return 0;
 }

@@ -1,4 +1,4 @@
-// Expected error: Return type mismatch: expected i64, got f64
+// Expected error: Return type mismatch for value 1: expected i64, got f64
 fn test() i64 {
     return 3.14;
 }

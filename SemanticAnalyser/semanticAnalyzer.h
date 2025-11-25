@@ -36,6 +36,7 @@ public:
     bool add_symbol(const Symbol& sym);
     Symbol* find(const std::string& name);
     Symbol* find_in_current_scope(const std::string& name);
+    void clear();
 };
 
 class SemanticAnalyzer{
@@ -44,7 +45,7 @@ class SemanticAnalyzer{
     std::unordered_set<std::string> builtin_functions;
     int current_line = 0;
     bool in_loop = false;
-    TypePtr current_function_return_type = nullptr;
+    std::vector<TypePtr> current_function_return_types;
     
     void handle_node(ASTNode* node);
     void handle_function(FunctionDecl* funcDecl);

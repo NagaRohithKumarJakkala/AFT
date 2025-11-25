@@ -1,8 +1,17 @@
 // Expected error: Break statement outside of loop
 fn main() i64 {
-    let x: i64 = 10;
+    let x: i64 = 10 as i64;
     if(x > 5) {
         break;
     }
-    return 0;
+    return 0 as i64;
 }
+// Expected error: Continue statement outside of loop
+fn hey() i64 {
+    let x: i64 = 10 as i64;
+    if(x > 5) {
+        continue;
+    }
+    return 0 as i64;
+}
+

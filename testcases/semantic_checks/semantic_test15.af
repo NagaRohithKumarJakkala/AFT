@@ -14,3 +14,15 @@ fn main() i64 {
     }
     return y;
 }
+
+// Expected error: Function 'test' already declared
+// Expected error: Function 'main' already declared
+fn test() i64 {
+    return 5;
+}
+fn test() i64 {
+    return 10;
+}
+fn main() i64 {
+    return 0;
+}

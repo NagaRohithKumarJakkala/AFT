@@ -58,8 +58,13 @@ Symbol* SymbolTable::find_in_current_scope(const std::string& name){
     }
     return nullptr;
 }
+void SymbolTable::clear() {
+    scopes.clear();
+    enter_scope(); // start with a global scope
+}
 
 SemanticAnalyzer::SemanticAnalyzer(){
+    //adding built-in functions to be ignored during semantic analysis
     builtin_functions.insert("print");
     builtin_functions.insert("printf");
     builtin_functions.insert("sin");
@@ -70,6 +75,7 @@ SemanticAnalyzer::SemanticAnalyzer(){
     builtin_functions.insert("log");
     builtin_functions.insert("dbg");
 
+    //adding pi constant
     Symbol pi_const;
     pi_const.name = "PI";
     pi_const.kind = SymbolKind::VARIABLE;
@@ -89,7 +95,10 @@ SymbolTable& SemanticAnalyzer::get_symbol_table(){
 
 void SemanticAnalyzer::check(Program* program){
     if(!program) return;
-    
+
+    sym_table.clear(); // clear all scopes before checking
+
+
     for(auto& block : program->Blocks){
         handle_node(block.get());
     }
@@ -98,6 +107,7 @@ void SemanticAnalyzer::check(Program* program){
         print_errors();
     }
 }
+
 
 void SemanticAnalyzer::handle_node(ASTNode* node){
     if(auto func_decl = dynamic_cast<FunctionDecl*>(node)){
@@ -122,10 +132,12 @@ void SemanticAnalyzer::handle_function(FunctionDecl* funcDecl){
     }
     
     if(!funcDecl->return_types.empty()){
-        func_sym.type = funcDecl->return_types[0]->clone();
-        current_function_return_type = funcDecl->return_types[0]->clone();
+        current_function_return_types.clear();
+        for(const auto& ret_type : funcDecl->return_types){
+            current_function_return_types.push_back(ret_type->clone());
+        }
     }
-    
+
     if(!sym_table.add_symbol(func_sym)){
         report_error("Function '" + funcDecl->name + "' already declared");
     }
@@ -151,7 +163,8 @@ void SemanticAnalyzer::handle_function(FunctionDecl* funcDecl){
     }
     
     sym_table.leave_scope();
-    current_function_return_type = nullptr;
+    current_function_return_types.clear();
+
 }
 
 void SemanticAnalyzer::handle_struct(StructDecl* structDecl){
@@ -380,22 +393,33 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
     }
     
     if(auto ret = dynamic_cast<ReturnStmt*>(stmt)){
-        if(!current_function_return_type){
+
+        if(current_function_return_types.empty()){
             report_error("Return statement outside of function");
             return;
         }
-        
-        if(ret->values.empty() && current_function_return_type){
-            report_error("Function expects return value of type " + type_to_string(current_function_return_type));
-        } else if(!ret->values.empty()){
-            handle_expression(ret->values[0].get());
-            TypePtr return_type = infer_type(ret->values[0].get());
-            if(!check_type_compatibility(current_function_return_type, return_type)){
-                report_error("Return type mismatch: expected " + type_to_string(current_function_return_type) + 
-                          ", got " + type_to_string(return_type));
+
+        if(ret->values.size() != current_function_return_types.size()){
+            report_error("Return statement expects " + std::to_string(current_function_return_types.size()) + 
+                        " values, got " + std::to_string(ret->values.size()));
+            return;
+        }
+
+        for(size_t i = 0; i < current_function_return_types.size(); ++i){
+            if(i >= ret->values.size() || !ret->values[i]){
+                report_error("Return value " + std::to_string(i+1) + " is missing");
+                continue;
+            }
+            handle_expression(ret->values[i].get());
+            TypePtr return_type = infer_type(ret->values[i].get());
+
+            if(!check_type_compatibility(current_function_return_types[i], return_type)){
+                report_error("Return type mismatch for value " + std::to_string(i+1) + ": expected " +
+                    type_to_string(current_function_return_types[i]) + ", got " + type_to_string(return_type));
             }
         }
         return;
+
     }
     
     if(auto break_stmt = dynamic_cast<BreakStmt*>(stmt)){
@@ -522,6 +546,16 @@ TypePtr SemanticAnalyzer::infer_type(Expression* expr){
             return sym->type->clone();
         }
     }
+
+    if (auto un = dynamic_cast<UnaryExpression*>(expr)) {
+        TypePtr operand_type = infer_type(un->operand.get());
+
+        if (operand_type) {
+            return operand_type->clone();
+        }
+        return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
+    }
+
     
     if(auto bin = dynamic_cast<BinaryExpression*>(expr)){
         TypePtr left_type = infer_type(bin->left.get());
@@ -618,13 +652,65 @@ bool SemanticAnalyzer::can_cast_to(const TypePtr& from, const TypePtr& to){
 
 void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, const TypePtr& right, int line){
     if(!left || !right) return;
+    
+    bool left_is_vector = is_vector_type(left);
+    bool right_is_vector = is_vector_type(right);
+    
     switch(op){
         case BinaryOp::PLUS:
         case BinaryOp::MINUS:
+            // should allow numeric + numeric, vector + vector
+            if(left_is_vector && right_is_vector){
+                // Check element type compatibility
+                auto left_vec = dynamic_cast<VectorType*>(left.get());
+                auto right_vec = dynamic_cast<VectorType*>(right.get());
+                if(!check_type_compatibility(left_vec->element_type, right_vec->element_type)){
+                    report_error("Vector operation requires compatible element types");
+                }
+            } else if(!left_is_vector && !right_is_vector){
+                if(!is_numeric_type(left) || !is_numeric_type(right)){
+                    report_error("Arithmetic operation requires numeric types or vector types(same element type)");
+                }
+            } else {
+                report_error("Cannot mix vector and scalar in addition/subtraction");
+            }
+            break;
+            
         case BinaryOp::MULTIPLY:
         case BinaryOp::DIVIDE:
-            if(!is_numeric_type(left) || !is_numeric_type(right)){
-                report_error("Arithmetic operation requires numeric types");
+            // Allow: numeric * numeric, vector * scalar, scalar * vector
+            if(left_is_vector && !right_is_vector){
+                // Scalar multiplication/division
+                if(!is_numeric_type(right)){
+                    report_error("Scalar must be numeric type");
+                }
+            } else if(!left_is_vector && right_is_vector){
+                // Scalar multiplication
+                if(op == BinaryOp::DIVIDE){
+                    report_error("Cannot divide scalar by vector");
+                }
+                if(!is_numeric_type(left)){
+                    report_error("Scalar must be numeric type");
+                }
+            } else if(left_is_vector && right_is_vector){
+                report_error("Element-wise multiplication not supported, use convolution (.) for vectors");
+            } else {
+                if(!is_numeric_type(left) || !is_numeric_type(right)){
+                    report_error("Arithmetic operation requires numeric types");
+                }
+            }
+            break;
+            
+        case BinaryOp::CONVOLUTION:
+            // vector convolution
+            if(!left_is_vector || !right_is_vector){
+                report_error("Convolution requires vector types");
+            } else {
+                auto left_vec = dynamic_cast<VectorType*>(left.get());
+                auto right_vec = dynamic_cast<VectorType*>(right.get());
+                if(!check_type_compatibility(left_vec->element_type, right_vec->element_type)){
+                    report_error("Convolution requires vectors with compatible element types");
+                }
             }
             break;
             
@@ -644,12 +730,6 @@ void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, 
             if(!dynamic_cast<PrimitiveType*>(left.get()) || 
                 !dynamic_cast<PrimitiveType*>(right.get())){
                 report_error("Logical operation requires boolean types");
-            }
-            break;
-            
-        case BinaryOp::CONVOLUTION:
-            if(!is_vector_type(left) || !is_vector_type(right)){
-                report_error("Convolution requires vector types");
             }
             break;
             

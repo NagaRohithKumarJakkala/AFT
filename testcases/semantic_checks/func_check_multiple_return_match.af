@@ -1,0 +1,22 @@
+//Expected error: Return statement expects 2 values, got 1
+//Expected error: Return type mismatch for value 2: expected f64, got bool
+//Expected error: Type mismatch in initialization of 'x': expected i32, got i64
+//Expected error: Type mismatch in initialization of 'x': expected i32, got i64
+fn multiple_returns_example(a: i32, b: f64) (i32, f64, bool) {
+    let sum: i32 = a + 10;
+    let product: f64 = b * 2.5;
+    let flag: bool = true;
+
+    return sum, product, flag;
+}
+
+fn test_wrong_return_count() (i32, f64) {
+    let x: i32 = 5;
+    return x;  // Not enough return values
+}
+
+fn test_type_mismatch() (i32, f64) {
+    let x: i32 = 10;
+    let y: f64 = 3.14;
+    return x, true; // Type mismatch here
+}
