@@ -1,6 +1,6 @@
 fn generate_sine_wave(frequency: f64, sample_rate: f64, duration: f64) [f64] {
 let num_samples = (duration * sample_rate) as u32;
-let signal: [f64] = [];
+let signal: [f64] = [] as [f64];
 for i in 0..num_samples {
 let t = i as f64 / sample_rate;
 let sample = sin(2.0 * PI * frequency * t);

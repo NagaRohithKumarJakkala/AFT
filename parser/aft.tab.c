@@ -67,7 +67,7 @@
 
 
 /* First part of user prologue.  */
-#line 8 "aft.y"
+#line 8 "parser/aft.y"
 
     #include<stdio.h>
     #include <stdlib.h>
@@ -83,7 +83,7 @@
     void yyerror(const char*s);
     Program* ast_root =new Program();
 
-#line 87 "aft.tab.c"
+#line 87 "parser/aft.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -1452,46 +1452,46 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* program: %empty  */
-#line 111 "aft.y"
+#line 111 "parser/aft.y"
                 {
     }
-#line 1459 "aft.tab.c"
+#line 1459 "parser/aft.tab.c"
     break;
 
   case 3: /* program: program function_decl  */
-#line 113 "aft.y"
+#line 113 "parser/aft.y"
                             {
         ast_root->Blocks.emplace_back(std::unique_ptr<FunctionDecl>((yyvsp[0].function_decl)));
     }
-#line 1467 "aft.tab.c"
+#line 1467 "parser/aft.tab.c"
     break;
 
   case 4: /* program: program const_decl SEMICOLON  */
-#line 116 "aft.y"
+#line 116 "parser/aft.y"
                                    {
         ast_root->Blocks.emplace_back(std::unique_ptr<ConstDecl>((yyvsp[-1].const_decl)));
     }
-#line 1475 "aft.tab.c"
+#line 1475 "parser/aft.tab.c"
     break;
 
   case 5: /* program: program struct_decl  */
-#line 119 "aft.y"
+#line 119 "parser/aft.y"
                           {
         ast_root->Blocks.emplace_back(std::unique_ptr<StructDecl>((yyvsp[0].struct_decl)));
     }
-#line 1483 "aft.tab.c"
+#line 1483 "parser/aft.tab.c"
     break;
 
   case 6: /* struct_decl: STRUCT IDENTIFIER LEFTBRACE RIGHTBRACE  */
-#line 125 "aft.y"
+#line 125 "parser/aft.y"
                                            {
         (yyval.struct_decl) = new StructDecl((yyvsp[-2].sval), {});
     }
-#line 1491 "aft.tab.c"
+#line 1491 "parser/aft.tab.c"
     break;
 
   case 7: /* struct_decl: STRUCT IDENTIFIER LEFTBRACE parameter_list RIGHTBRACE  */
-#line 128 "aft.y"
+#line 128 "parser/aft.y"
                                                             {
         std::vector<ParameterPtr> members;
         for (auto* p : *(yyvsp[-1].param_list))
@@ -1500,11 +1500,11 @@ yyreduce:
 
         (yyval.struct_decl) = new StructDecl((yyvsp[-3].sval), std::move(members));
     }
-#line 1504 "aft.tab.c"
+#line 1504 "parser/aft.tab.c"
     break;
 
   case 8: /* function_decl: FUNCTION IDENTIFIER LEFTPAREN parameter_list RIGHTPAREN return_type_list statement_block  */
-#line 139 "aft.y"
+#line 139 "parser/aft.y"
                                                                                              {
         std::vector<ParameterPtr> params;
         for (auto* p : *(yyvsp[-3].param_list))
@@ -1517,11 +1517,11 @@ yyreduce:
         delete (yyvsp[-1].type_list);
         (yyval.function_decl) = new FunctionDecl((yyvsp[-5].sval), std::move(params), std::move(rets), std::unique_ptr<StatementBlock>((yyvsp[0].stmt_block)));
     }
-#line 1521 "aft.tab.c"
+#line 1521 "parser/aft.tab.c"
     break;
 
   case 9: /* function_decl: FUNCTION IDENTIFIER LEFTPAREN RIGHTPAREN return_type_list statement_block  */
-#line 152 "aft.y"
+#line 152 "parser/aft.y"
                                                                               {
         std::vector<TypePtr> rets;
         for (auto* t : *(yyvsp[-1].type_list)) rets.emplace_back(TypePtr(t));
@@ -1529,245 +1529,245 @@ yyreduce:
  
         (yyval.function_decl) = new FunctionDecl((yyvsp[-4].sval), {}, std::move(rets), std::unique_ptr<StatementBlock>((yyvsp[0].stmt_block)));
     }
-#line 1533 "aft.tab.c"
+#line 1533 "parser/aft.tab.c"
     break;
 
   case 10: /* parameter_list: parameter  */
-#line 162 "aft.y"
+#line 162 "parser/aft.y"
               {
         (yyval.param_list) = new std::vector<Parameter*>();
         (yyval.param_list)->push_back((yyvsp[0].parameter));
     }
-#line 1542 "aft.tab.c"
+#line 1542 "parser/aft.tab.c"
     break;
 
   case 11: /* parameter_list: parameter_list COMMA parameter  */
-#line 166 "aft.y"
+#line 166 "parser/aft.y"
                                      {
         (yyval.param_list) = (yyvsp[-2].param_list);
         (yyval.param_list)->push_back((yyvsp[0].parameter));
     }
-#line 1551 "aft.tab.c"
+#line 1551 "parser/aft.tab.c"
     break;
 
   case 12: /* parameter: IDENTIFIER COLON type  */
-#line 173 "aft.y"
+#line 173 "parser/aft.y"
                           {
         (yyval.parameter) = new Parameter((yyvsp[-2].sval), std::unique_ptr<Types>((yyvsp[0].type)));
     }
-#line 1559 "aft.tab.c"
+#line 1559 "parser/aft.tab.c"
     break;
 
   case 13: /* return_type_list: %empty  */
-#line 179 "aft.y"
+#line 179 "parser/aft.y"
                 {
         (yyval.type_list) = new std::vector<Types*>();
     }
-#line 1567 "aft.tab.c"
+#line 1567 "parser/aft.tab.c"
     break;
 
   case 14: /* return_type_list: type  */
-#line 182 "aft.y"
+#line 182 "parser/aft.y"
            {
         (yyval.type_list) = new std::vector<Types*>();
         (yyval.type_list)->push_back((yyvsp[0].type));
     }
-#line 1576 "aft.tab.c"
+#line 1576 "parser/aft.tab.c"
     break;
 
   case 15: /* return_type_list: LEFTPAREN type_list RIGHTPAREN  */
-#line 186 "aft.y"
+#line 186 "parser/aft.y"
                                      {
         (yyval.type_list) = new std::vector<Types*>();
         for (auto* type : *(yyvsp[-1].type_list)) {
             (yyval.type_list)->push_back(type);
         }
     }
-#line 1587 "aft.tab.c"
+#line 1587 "parser/aft.tab.c"
     break;
 
   case 16: /* type_list: type  */
-#line 195 "aft.y"
+#line 195 "parser/aft.y"
          {
 (yyval.type_list) = new std::vector<Types*>();
         (yyval.type_list)->push_back((yyvsp[0].type));
     }
-#line 1596 "aft.tab.c"
+#line 1596 "parser/aft.tab.c"
     break;
 
   case 17: /* type_list: type_list COMMA type  */
-#line 199 "aft.y"
+#line 199 "parser/aft.y"
                            {
         (yyval.type_list) = (yyvsp[-2].type_list);
         (yyval.type_list)->push_back((yyvsp[0].type));
     }
-#line 1605 "aft.tab.c"
+#line 1605 "parser/aft.tab.c"
     break;
 
   case 18: /* type: primitive_type  */
-#line 206 "aft.y"
+#line 206 "parser/aft.y"
                    {
         (yyval.type)=(yyvsp[0].type);
     }
-#line 1613 "aft.tab.c"
+#line 1613 "parser/aft.tab.c"
     break;
 
   case 19: /* type: vector_type  */
-#line 209 "aft.y"
+#line 209 "parser/aft.y"
                   {
         (yyval.type)=(yyvsp[0].type);
     }
-#line 1621 "aft.tab.c"
+#line 1621 "parser/aft.tab.c"
     break;
 
   case 20: /* type: IDENTIFIER  */
-#line 212 "aft.y"
+#line 212 "parser/aft.y"
                  { 
         (yyval.type)= new StructType(std::string((yyvsp[0].sval)));
         free((yyvsp[0].sval));
     }
-#line 1630 "aft.tab.c"
+#line 1630 "parser/aft.tab.c"
     break;
 
   case 21: /* primitive_type: I8  */
-#line 219 "aft.y"
+#line 219 "parser/aft.y"
        {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::I8);
     }
-#line 1638 "aft.tab.c"
+#line 1638 "parser/aft.tab.c"
     break;
 
   case 22: /* primitive_type: I16  */
-#line 222 "aft.y"
+#line 222 "parser/aft.y"
           {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::I16);
     }
-#line 1646 "aft.tab.c"
+#line 1646 "parser/aft.tab.c"
     break;
 
   case 23: /* primitive_type: I32  */
-#line 225 "aft.y"
+#line 225 "parser/aft.y"
           {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::I32);
     }
-#line 1654 "aft.tab.c"
+#line 1654 "parser/aft.tab.c"
     break;
 
   case 24: /* primitive_type: I64  */
-#line 228 "aft.y"
+#line 228 "parser/aft.y"
           {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::I64);
 
     }
-#line 1663 "aft.tab.c"
+#line 1663 "parser/aft.tab.c"
     break;
 
   case 25: /* primitive_type: I128  */
-#line 232 "aft.y"
+#line 232 "parser/aft.y"
            {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::I128);
     }
-#line 1671 "aft.tab.c"
+#line 1671 "parser/aft.tab.c"
     break;
 
   case 26: /* primitive_type: U8  */
-#line 235 "aft.y"
+#line 235 "parser/aft.y"
          {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::U8);
     }
-#line 1679 "aft.tab.c"
+#line 1679 "parser/aft.tab.c"
     break;
 
   case 27: /* primitive_type: U16  */
-#line 238 "aft.y"
+#line 238 "parser/aft.y"
           {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::U16);
     }
-#line 1687 "aft.tab.c"
+#line 1687 "parser/aft.tab.c"
     break;
 
   case 28: /* primitive_type: U32  */
-#line 241 "aft.y"
+#line 241 "parser/aft.y"
           {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::U32);
     }
-#line 1695 "aft.tab.c"
+#line 1695 "parser/aft.tab.c"
     break;
 
   case 29: /* primitive_type: U64  */
-#line 244 "aft.y"
+#line 244 "parser/aft.y"
           {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::U64);
     }
-#line 1703 "aft.tab.c"
+#line 1703 "parser/aft.tab.c"
     break;
 
   case 30: /* primitive_type: U128  */
-#line 247 "aft.y"
+#line 247 "parser/aft.y"
            {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::U128);
     }
-#line 1711 "aft.tab.c"
+#line 1711 "parser/aft.tab.c"
     break;
 
   case 31: /* primitive_type: F32  */
-#line 250 "aft.y"
+#line 250 "parser/aft.y"
           {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::F32);
     }
-#line 1719 "aft.tab.c"
+#line 1719 "parser/aft.tab.c"
     break;
 
   case 32: /* primitive_type: F64  */
-#line 253 "aft.y"
+#line 253 "parser/aft.y"
           {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::F64);
     }
-#line 1727 "aft.tab.c"
+#line 1727 "parser/aft.tab.c"
     break;
 
   case 33: /* primitive_type: C32  */
-#line 256 "aft.y"
+#line 256 "parser/aft.y"
           {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::C32);
     }
-#line 1735 "aft.tab.c"
+#line 1735 "parser/aft.tab.c"
     break;
 
   case 34: /* primitive_type: C64  */
-#line 259 "aft.y"
+#line 259 "parser/aft.y"
           {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::C64);
     }
-#line 1743 "aft.tab.c"
+#line 1743 "parser/aft.tab.c"
     break;
 
   case 35: /* primitive_type: BOOL  */
-#line 262 "aft.y"
+#line 262 "parser/aft.y"
            {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::BOOL);
     }
-#line 1751 "aft.tab.c"
+#line 1751 "parser/aft.tab.c"
     break;
 
   case 36: /* primitive_type: STR  */
-#line 265 "aft.y"
+#line 265 "parser/aft.y"
           {
         (yyval.type) = new PrimitiveType(PrimitiveTypeEnum::STR);
     }
-#line 1759 "aft.tab.c"
+#line 1759 "parser/aft.tab.c"
     break;
 
   case 37: /* vector_type: LEFTSQUARE type RIGHTSQUARE  */
-#line 270 "aft.y"
+#line 270 "parser/aft.y"
                                 {
         (yyval.type) = new VectorType(TypePtr((yyvsp[-1].type)));
     }
-#line 1767 "aft.tab.c"
+#line 1767 "parser/aft.tab.c"
     break;
 
   case 38: /* statement_block: LEFTBRACE statement_list RIGHTBRACE  */
-#line 276 "aft.y"
+#line 276 "parser/aft.y"
                                         {
         (yyval.stmt_block) = new StatementBlock();
         if ((yyvsp[-1].stmt_list)) {
@@ -1777,131 +1777,131 @@ yyreduce:
             delete (yyvsp[-1].stmt_list);
         }
     }
-#line 1781 "aft.tab.c"
+#line 1781 "parser/aft.tab.c"
     break;
 
   case 39: /* statement_block: LEFTBRACE RIGHTBRACE  */
-#line 285 "aft.y"
+#line 285 "parser/aft.y"
                            {
         (yyval.stmt_block) = new StatementBlock();
     }
-#line 1789 "aft.tab.c"
+#line 1789 "parser/aft.tab.c"
     break;
 
   case 40: /* statement_list: statement  */
-#line 291 "aft.y"
+#line 291 "parser/aft.y"
               {
         (yyval.stmt_list) = new std::vector<Statement*>();
         (yyval.stmt_list)->push_back((yyvsp[0].statement));
     }
-#line 1798 "aft.tab.c"
+#line 1798 "parser/aft.tab.c"
     break;
 
   case 41: /* statement_list: statement_list statement  */
-#line 295 "aft.y"
+#line 295 "parser/aft.y"
                                {
         (yyval.stmt_list) = (yyvsp[-1].stmt_list);
         (yyval.stmt_list)->push_back((yyvsp[0].statement));
     }
-#line 1807 "aft.tab.c"
+#line 1807 "parser/aft.tab.c"
     break;
 
   case 42: /* statement: let_decl SEMICOLON  */
-#line 302 "aft.y"
+#line 302 "parser/aft.y"
                        {
         (yyval.statement) = (yyvsp[-1].let_decl);
     }
-#line 1815 "aft.tab.c"
+#line 1815 "parser/aft.tab.c"
     break;
 
   case 43: /* statement: const_decl SEMICOLON  */
-#line 305 "aft.y"
+#line 305 "parser/aft.y"
                            {
         (yyval.statement) = (yyvsp[-1].const_decl);
 
     }
-#line 1824 "aft.tab.c"
+#line 1824 "parser/aft.tab.c"
     break;
 
   case 44: /* statement: assignment SEMICOLON  */
-#line 309 "aft.y"
+#line 309 "parser/aft.y"
                            {
         (yyval.statement) = (yyvsp[-1].statement);
 
     }
-#line 1833 "aft.tab.c"
+#line 1833 "parser/aft.tab.c"
     break;
 
   case 45: /* statement: expression SEMICOLON  */
-#line 313 "aft.y"
+#line 313 "parser/aft.y"
                            {
          (yyval.statement) = new ExprStmt(ExprPtr((yyvsp[-1].expression)));
     }
-#line 1841 "aft.tab.c"
+#line 1841 "parser/aft.tab.c"
     break;
 
   case 46: /* statement: if_stmt  */
-#line 316 "aft.y"
+#line 316 "parser/aft.y"
               {
         (yyval.statement) = (yyvsp[0].if_stmt);
 
     }
-#line 1850 "aft.tab.c"
+#line 1850 "parser/aft.tab.c"
     break;
 
   case 47: /* statement: while_stmt  */
-#line 320 "aft.y"
+#line 320 "parser/aft.y"
                  {
         (yyval.statement) = (yyvsp[0].statement);
     }
-#line 1858 "aft.tab.c"
+#line 1858 "parser/aft.tab.c"
     break;
 
   case 48: /* statement: for_stmt  */
-#line 323 "aft.y"
+#line 323 "parser/aft.y"
                {
         (yyval.statement) = (yyvsp[0].statement);
 
     }
-#line 1867 "aft.tab.c"
+#line 1867 "parser/aft.tab.c"
     break;
 
   case 49: /* statement: repeat_stmt  */
-#line 327 "aft.y"
+#line 327 "parser/aft.y"
                   {
         (yyval.statement) = (yyvsp[0].statement);
 
     }
-#line 1876 "aft.tab.c"
+#line 1876 "parser/aft.tab.c"
     break;
 
   case 50: /* statement: return_stmt SEMICOLON  */
-#line 331 "aft.y"
+#line 331 "parser/aft.y"
                             {
         (yyval.statement) = (yyvsp[-1].statement);
 
     }
-#line 1885 "aft.tab.c"
+#line 1885 "parser/aft.tab.c"
     break;
 
   case 51: /* statement: BREAK SEMICOLON  */
-#line 335 "aft.y"
+#line 335 "parser/aft.y"
                       {
         (yyval.statement) = new BreakStmt();
     }
-#line 1893 "aft.tab.c"
+#line 1893 "parser/aft.tab.c"
     break;
 
   case 52: /* statement: CONTINUE SEMICOLON  */
-#line 338 "aft.y"
+#line 338 "parser/aft.y"
                          {
         (yyval.statement) = new ContinueStmt();
     }
-#line 1901 "aft.tab.c"
+#line 1901 "parser/aft.tab.c"
     break;
 
   case 53: /* let_decl: LET IDENTIFIER ASSIGN expression  */
-#line 346 "aft.y"
+#line 346 "parser/aft.y"
                                      {
         LetDecl* node = new LetDecl();
         node->names.push_back(std::string((yyvsp[-2].sval)));
@@ -1910,11 +1910,11 @@ yyreduce:
         node->values.push_back(ExprPtr((yyvsp[0].expression)));
         (yyval.let_decl) = node;
     }
-#line 1914 "aft.tab.c"
+#line 1914 "parser/aft.tab.c"
     break;
 
   case 54: /* let_decl: LET IDENTIFIER COLON type ASSIGN expression  */
-#line 354 "aft.y"
+#line 354 "parser/aft.y"
                                                   {
         LetDecl* node = new LetDecl();
         node->names.push_back(std::string((yyvsp[-4].sval)));
@@ -1923,11 +1923,11 @@ yyreduce:
         node->values.push_back(ExprPtr((yyvsp[0].expression)));
         (yyval.let_decl) = node;
     }
-#line 1927 "aft.tab.c"
+#line 1927 "parser/aft.tab.c"
     break;
 
   case 55: /* let_decl: LET LEFTPAREN identifier_list RIGHTPAREN ASSIGN LEFTPAREN expression_list RIGHTPAREN  */
-#line 362 "aft.y"
+#line 362 "parser/aft.y"
                                                                                            {
         LetDecl* node = new LetDecl();
         if ((yyvsp[-5].identifier_list)) {
@@ -1944,11 +1944,11 @@ yyreduce:
         }
         (yyval.let_decl) = node;
     }
-#line 1948 "aft.tab.c"
+#line 1948 "parser/aft.tab.c"
     break;
 
   case 56: /* let_decl: LET LEFTPAREN identifier_list RIGHTPAREN COLON LEFTPAREN type_list RIGHTPAREN ASSIGN LEFTPAREN expression_list RIGHTPAREN  */
-#line 378 "aft.y"
+#line 378 "parser/aft.y"
                                                                                                                                 {
         LetDecl* node = new LetDecl();
         if ((yyvsp[-9].identifier_list)) {
@@ -1971,11 +1971,11 @@ yyreduce:
         }
         (yyval.let_decl) = node;
     }
-#line 1975 "aft.tab.c"
+#line 1975 "parser/aft.tab.c"
     break;
 
   case 57: /* const_decl: CONST IDENTIFIER COLON type ASSIGN expression  */
-#line 403 "aft.y"
+#line 403 "parser/aft.y"
                                                   {
         ConstDecl* node = new ConstDecl();
         node->names.push_back(std::string((yyvsp[-4].sval)));
@@ -1985,11 +1985,11 @@ yyreduce:
         (yyval.const_decl) = node;
 
     }
-#line 1989 "aft.tab.c"
+#line 1989 "parser/aft.tab.c"
     break;
 
   case 58: /* const_decl: CONST LEFTPAREN identifier_list RIGHTPAREN COLON LEFTPAREN type_list RIGHTPAREN ASSIGN LEFTPAREN expression_list RIGHTPAREN  */
-#line 412 "aft.y"
+#line 412 "parser/aft.y"
                                                                                                                                   {
         ConstDecl* node = new ConstDecl();
         if ((yyvsp[-9].identifier_list)) {
@@ -2012,11 +2012,11 @@ yyreduce:
         }
         (yyval.const_decl) = node;
     }
-#line 2016 "aft.tab.c"
+#line 2016 "parser/aft.tab.c"
     break;
 
   case 59: /* identifier_list: IDENTIFIER COMMA IDENTIFIER  */
-#line 437 "aft.y"
+#line 437 "parser/aft.y"
                                 {
         (yyval.identifier_list) = new std::vector<std::string>();
         (yyval.identifier_list)->push_back(std::string((yyvsp[-2].sval)));
@@ -2024,20 +2024,20 @@ yyreduce:
         (yyval.identifier_list)->push_back(std::string((yyvsp[0].sval)));
         free((yyvsp[0].sval));
     }
-#line 2028 "aft.tab.c"
+#line 2028 "parser/aft.tab.c"
     break;
 
   case 60: /* identifier_list: identifier_list COMMA IDENTIFIER  */
-#line 444 "aft.y"
+#line 444 "parser/aft.y"
                                        {
         (yyval.identifier_list) = (yyvsp[-2].identifier_list);
         (yyval.identifier_list)->push_back((yyvsp[0].sval));
     }
-#line 2037 "aft.tab.c"
+#line 2037 "parser/aft.tab.c"
     break;
 
   case 61: /* assignment: IDENTIFIER ASSIGN expression  */
-#line 451 "aft.y"
+#line 451 "parser/aft.y"
                                  {
         Assignment* node = new Assignment();
         node->targets.push_back(std::string((yyvsp[-2].sval)));
@@ -2047,11 +2047,11 @@ yyreduce:
 
 
     }
-#line 2051 "aft.tab.c"
+#line 2051 "parser/aft.tab.c"
     break;
 
   case 62: /* assignment: LEFTPAREN identifier_list RIGHTPAREN ASSIGN LEFTPAREN expression_list RIGHTPAREN  */
-#line 460 "aft.y"
+#line 460 "parser/aft.y"
                                                                                        {
         Assignment* node = new Assignment();
         if ((yyvsp[-5].identifier_list)) {
@@ -2068,11 +2068,11 @@ yyreduce:
         }
         (yyval.statement) = node;
     }
-#line 2072 "aft.tab.c"
+#line 2072 "parser/aft.tab.c"
     break;
 
   case 63: /* if_stmt: IF expression statement_block  */
-#line 479 "aft.y"
+#line 479 "parser/aft.y"
                                   {
         IfStmt* node = new IfStmt();
         node->condition = ExprPtr((yyvsp[-1].expression));
@@ -2082,11 +2082,11 @@ yyreduce:
         (yyval.if_stmt) = node;
 
     }
-#line 2086 "aft.tab.c"
+#line 2086 "parser/aft.tab.c"
     break;
 
   case 64: /* if_stmt: IF expression statement_block ELSE statement_block  */
-#line 488 "aft.y"
+#line 488 "parser/aft.y"
                                                          {
         IfStmt* node = new IfStmt();
         node->condition = ExprPtr((yyvsp[-3].expression));
@@ -2095,11 +2095,11 @@ yyreduce:
         node->else_if = std::nullopt;
         (yyval.if_stmt) = node;
     }
-#line 2099 "aft.tab.c"
+#line 2099 "parser/aft.tab.c"
     break;
 
   case 65: /* if_stmt: IF expression statement_block ELSE if_stmt  */
-#line 496 "aft.y"
+#line 496 "parser/aft.y"
                                                  {
         IfStmt* node = new IfStmt();
         node->condition = ExprPtr((yyvsp[-3].expression));
@@ -2108,22 +2108,22 @@ yyreduce:
         node->else_if = std::make_optional<std::unique_ptr<IfStmt>>(std::unique_ptr<IfStmt>((yyvsp[0].if_stmt)));
         (yyval.if_stmt) = node;
     }
-#line 2112 "aft.tab.c"
+#line 2112 "parser/aft.tab.c"
     break;
 
   case 66: /* while_stmt: WHILE expression statement_block  */
-#line 507 "aft.y"
+#line 507 "parser/aft.y"
                                      {
         WhileStmt* node = new WhileStmt();
         node->condition = ExprPtr((yyvsp[-1].expression));
         node->body = std::unique_ptr<StatementBlock>((yyvsp[0].stmt_block));
         (yyval.statement) = node;
     }
-#line 2123 "aft.tab.c"
+#line 2123 "parser/aft.tab.c"
     break;
 
   case 67: /* for_stmt: FOR IDENTIFIER IN expression statement_block  */
-#line 516 "aft.y"
+#line 516 "parser/aft.y"
                                                  {
         ForStmt* node = new ForStmt();
         node->iterator = std::string((yyvsp[-3].sval));
@@ -2132,22 +2132,22 @@ yyreduce:
         node->body = std::unique_ptr<StatementBlock>((yyvsp[0].stmt_block));
         (yyval.statement) = node;
     }
-#line 2136 "aft.tab.c"
+#line 2136 "parser/aft.tab.c"
     break;
 
   case 68: /* repeat_stmt: REPEAT expression statement_block  */
-#line 527 "aft.y"
+#line 527 "parser/aft.y"
                                       {
         RepeatStmt* node = new RepeatStmt();
         node->count = ExprPtr((yyvsp[-1].expression));
         node->body = std::unique_ptr<StatementBlock>((yyvsp[0].stmt_block));
         (yyval.statement) = node;
     }
-#line 2147 "aft.tab.c"
+#line 2147 "parser/aft.tab.c"
     break;
 
   case 69: /* return_stmt: RETURN expression_list  */
-#line 536 "aft.y"
+#line 536 "parser/aft.y"
                            {
         ReturnStmt* node = new ReturnStmt();
         if ((yyvsp[0].expr_list)) {
@@ -2158,20 +2158,20 @@ yyreduce:
         }
         (yyval.statement) = node;
     }
-#line 2162 "aft.tab.c"
+#line 2162 "parser/aft.tab.c"
     break;
 
   case 70: /* return_stmt: RETURN  */
-#line 546 "aft.y"
+#line 546 "parser/aft.y"
              {
         ReturnStmt* node = new ReturnStmt();
         (yyval.statement) = node;
     }
-#line 2171 "aft.tab.c"
+#line 2171 "parser/aft.tab.c"
     break;
 
   case 71: /* function_call: IDENTIFIER LEFTPAREN argument_list RIGHTPAREN  */
-#line 553 "aft.y"
+#line 553 "parser/aft.y"
                                                   {
         FunctionCallExpr* node = new FunctionCallExpr(std::string((yyvsp[-3].sval)), {});
         free((yyvsp[-3].sval));
@@ -2182,377 +2182,377 @@ yyreduce:
         (yyval.function_call) = node;
 
     }
-#line 2186 "aft.tab.c"
+#line 2186 "parser/aft.tab.c"
     break;
 
   case 72: /* argument_list: expression_list  */
-#line 566 "aft.y"
+#line 566 "parser/aft.y"
                     {
         (yyval.expr_list)=(yyvsp[0].expr_list);
     }
-#line 2194 "aft.tab.c"
+#line 2194 "parser/aft.tab.c"
     break;
 
   case 73: /* argument_list: %empty  */
-#line 569 "aft.y"
+#line 569 "parser/aft.y"
                   {
         (yyval.expr_list) = nullptr;
     }
-#line 2202 "aft.tab.c"
+#line 2202 "parser/aft.tab.c"
     break;
 
   case 74: /* unary_expression: PLUS expression  */
-#line 575 "aft.y"
+#line 575 "parser/aft.y"
                                      {
        UnaryExpression* node = new UnaryExpression(UnaryOp::PLUS, ExprPtr((yyvsp[0].expression)));
         (yyval.expression) = node;
     }
-#line 2211 "aft.tab.c"
+#line 2211 "parser/aft.tab.c"
     break;
 
   case 75: /* unary_expression: MINUS expression  */
-#line 579 "aft.y"
+#line 579 "parser/aft.y"
                                          {
        UnaryExpression* node = new UnaryExpression(UnaryOp::MINUS, ExprPtr((yyvsp[0].expression)));
         (yyval.expression) = node;
     }
-#line 2220 "aft.tab.c"
+#line 2220 "parser/aft.tab.c"
     break;
 
   case 76: /* unary_expression: REVERSE expression  */
-#line 583 "aft.y"
+#line 583 "parser/aft.y"
                          {
         UnaryExpression* node = new UnaryExpression(UnaryOp::REVERSE, ExprPtr((yyvsp[0].expression)));
         (yyval.expression) = node;
     }
-#line 2229 "aft.tab.c"
+#line 2229 "parser/aft.tab.c"
     break;
 
   case 77: /* expression: range_expr  */
-#line 589 "aft.y"
+#line 589 "parser/aft.y"
               {
         (yyval.expression) = (yyvsp[0].expression);
     }
-#line 2237 "aft.tab.c"
+#line 2237 "parser/aft.tab.c"
     break;
 
   case 78: /* expression: function_call  */
-#line 592 "aft.y"
+#line 592 "parser/aft.y"
                    {
         (yyval.expression) = (yyvsp[0].function_call);
     }
-#line 2245 "aft.tab.c"
+#line 2245 "parser/aft.tab.c"
     break;
 
   case 79: /* expression: IDENTIFIER  */
-#line 595 "aft.y"
+#line 595 "parser/aft.y"
                 {
         (yyval.expression) = new IdentifierExpr(std::string((yyvsp[0].sval)));
         free((yyvsp[0].sval));
     }
-#line 2254 "aft.tab.c"
+#line 2254 "parser/aft.tab.c"
     break;
 
   case 80: /* expression: LEFTPAREN expression RIGHTPAREN  */
-#line 599 "aft.y"
+#line 599 "parser/aft.y"
                                       {
         (yyval.expression) = (yyvsp[-1].expression);
     }
-#line 2262 "aft.tab.c"
+#line 2262 "parser/aft.tab.c"
     break;
 
   case 81: /* expression: unary_expression  */
-#line 602 "aft.y"
+#line 602 "parser/aft.y"
                        {
         (yyval.expression) = (yyvsp[0].expression);
     }
-#line 2270 "aft.tab.c"
+#line 2270 "parser/aft.tab.c"
     break;
 
   case 82: /* expression: expression PLUS expression  */
-#line 605 "aft.y"
+#line 605 "parser/aft.y"
                                  {
         (yyval.expression) = new BinaryExpression(BinaryOp::PLUS, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2278 "aft.tab.c"
+#line 2278 "parser/aft.tab.c"
     break;
 
   case 83: /* expression: expression MINUS expression  */
-#line 608 "aft.y"
+#line 608 "parser/aft.y"
                                   {
         (yyval.expression) = new BinaryExpression(BinaryOp::MINUS, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2286 "aft.tab.c"
+#line 2286 "parser/aft.tab.c"
     break;
 
   case 84: /* expression: expression MULTIPLY expression  */
-#line 611 "aft.y"
+#line 611 "parser/aft.y"
                                      {
         (yyval.expression) = new BinaryExpression(BinaryOp::MULTIPLY, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2294 "aft.tab.c"
+#line 2294 "parser/aft.tab.c"
     break;
 
   case 85: /* expression: expression DIVIDE expression  */
-#line 614 "aft.y"
+#line 614 "parser/aft.y"
                                    {
         (yyval.expression) = new BinaryExpression(BinaryOp::DIVIDE, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2302 "aft.tab.c"
+#line 2302 "parser/aft.tab.c"
     break;
 
   case 86: /* expression: expression MODULO expression  */
-#line 617 "aft.y"
+#line 617 "parser/aft.y"
                                    {
         (yyval.expression) = new BinaryExpression(BinaryOp::MODULO, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2310 "aft.tab.c"
+#line 2310 "parser/aft.tab.c"
     break;
 
   case 87: /* expression: expression EXPONENTIATE expression  */
-#line 620 "aft.y"
+#line 620 "parser/aft.y"
                                          {
         (yyval.expression) = new BinaryExpression(BinaryOp::EXPONENTIATE, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2318 "aft.tab.c"
+#line 2318 "parser/aft.tab.c"
     break;
 
   case 88: /* expression: expression EQUALS expression  */
-#line 623 "aft.y"
+#line 623 "parser/aft.y"
                                    {
         (yyval.expression) = new BinaryExpression(BinaryOp::EQUALS, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2326 "aft.tab.c"
+#line 2326 "parser/aft.tab.c"
     break;
 
   case 89: /* expression: expression NOTEQUAL expression  */
-#line 626 "aft.y"
+#line 626 "parser/aft.y"
                                      {
         (yyval.expression) = new BinaryExpression(BinaryOp::NOTEQUAL, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2334 "aft.tab.c"
+#line 2334 "parser/aft.tab.c"
     break;
 
   case 90: /* expression: expression LESSTHAN expression  */
-#line 629 "aft.y"
+#line 629 "parser/aft.y"
                                      {
         (yyval.expression) = new BinaryExpression(BinaryOp::LESSTHAN, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2342 "aft.tab.c"
+#line 2342 "parser/aft.tab.c"
     break;
 
   case 91: /* expression: expression GREATERTHAN expression  */
-#line 632 "aft.y"
+#line 632 "parser/aft.y"
                                         {
         (yyval.expression) = new BinaryExpression(BinaryOp::GREATERTHAN, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2350 "aft.tab.c"
+#line 2350 "parser/aft.tab.c"
     break;
 
   case 92: /* expression: expression LESSTHANEQUAL expression  */
-#line 635 "aft.y"
+#line 635 "parser/aft.y"
                                           {
         (yyval.expression) = new BinaryExpression(BinaryOp::LESSTHANEQUAL, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2358 "aft.tab.c"
+#line 2358 "parser/aft.tab.c"
     break;
 
   case 93: /* expression: expression GREATERTHANEQUAL expression  */
-#line 638 "aft.y"
+#line 638 "parser/aft.y"
                                              {
         (yyval.expression) = new BinaryExpression(BinaryOp::GREATERTHANEQUAL, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2366 "aft.tab.c"
+#line 2366 "parser/aft.tab.c"
     break;
 
   case 94: /* expression: expression AND expression  */
-#line 641 "aft.y"
+#line 641 "parser/aft.y"
                                 {
         (yyval.expression) = new BinaryExpression(BinaryOp::AND, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2374 "aft.tab.c"
+#line 2374 "parser/aft.tab.c"
     break;
 
   case 95: /* expression: expression OR expression  */
-#line 644 "aft.y"
+#line 644 "parser/aft.y"
                                {
         (yyval.expression) = new BinaryExpression(BinaryOp::OR, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2382 "aft.tab.c"
+#line 2382 "parser/aft.tab.c"
     break;
 
   case 96: /* expression: expression XOR expression  */
-#line 647 "aft.y"
+#line 647 "parser/aft.y"
                                 {
         (yyval.expression) = new BinaryExpression(BinaryOp::XOR, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2390 "aft.tab.c"
+#line 2390 "parser/aft.tab.c"
     break;
 
   case 97: /* expression: NOT expression  */
-#line 650 "aft.y"
+#line 650 "parser/aft.y"
                      {
         (yyval.expression) = new UnaryExpression(UnaryOp::NOT, ExprPtr((yyvsp[0].expression)));
     }
-#line 2398 "aft.tab.c"
+#line 2398 "parser/aft.tab.c"
     break;
 
   case 98: /* expression: expression BITWISEAND expression  */
-#line 653 "aft.y"
+#line 653 "parser/aft.y"
                                        {
         (yyval.expression) = new BinaryExpression(BinaryOp::BITWISEAND, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2406 "aft.tab.c"
+#line 2406 "parser/aft.tab.c"
     break;
 
   case 99: /* expression: expression BITWISEOR expression  */
-#line 656 "aft.y"
+#line 656 "parser/aft.y"
                                       {
         (yyval.expression) = new BinaryExpression(BinaryOp::BITWISEOR, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2414 "aft.tab.c"
+#line 2414 "parser/aft.tab.c"
     break;
 
   case 100: /* expression: expression LEFTSHIFT expression  */
-#line 659 "aft.y"
+#line 659 "parser/aft.y"
                                       {
         (yyval.expression) = new BinaryExpression(BinaryOp::LEFTSHIFT, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2422 "aft.tab.c"
+#line 2422 "parser/aft.tab.c"
     break;
 
   case 101: /* expression: expression RIGHTSHIFT expression  */
-#line 662 "aft.y"
+#line 662 "parser/aft.y"
                                        {
         (yyval.expression) = new BinaryExpression(BinaryOp::RIGHTSHIFT, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2430 "aft.tab.c"
+#line 2430 "parser/aft.tab.c"
     break;
 
   case 102: /* expression: expression CONVOLUTION expression  */
-#line 665 "aft.y"
+#line 665 "parser/aft.y"
                                         {
         (yyval.expression) = new BinaryExpression(BinaryOp::CONVOLUTION, ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)));
     }
-#line 2438 "aft.tab.c"
+#line 2438 "parser/aft.tab.c"
     break;
 
   case 103: /* expression: expression LEFTSQUARE expression RIGHTSQUARE  */
-#line 668 "aft.y"
+#line 668 "parser/aft.y"
                                                    {
         (yyval.expression) = new IndexExpression(ExprPtr((yyvsp[-3].expression)), ExprPtr((yyvsp[-1].expression)));
     }
-#line 2446 "aft.tab.c"
+#line 2446 "parser/aft.tab.c"
     break;
 
   case 104: /* expression: expression AS type  */
-#line 671 "aft.y"
+#line 671 "parser/aft.y"
                          {
         (yyval.expression) = new TypeCastExpr(ExprPtr((yyvsp[-2].expression)),TypePtr((yyvsp[0].type)));
     }
-#line 2454 "aft.tab.c"
+#line 2454 "parser/aft.tab.c"
     break;
 
   case 105: /* expression: literal  */
-#line 674 "aft.y"
+#line 674 "parser/aft.y"
              {
         (yyval.expression) = (yyvsp[0].expression);
     }
-#line 2462 "aft.tab.c"
+#line 2462 "parser/aft.tab.c"
     break;
 
   case 106: /* expression_list: expression  */
-#line 680 "aft.y"
+#line 680 "parser/aft.y"
                {
         (yyval.expr_list) = new std::vector<Expression*>();
         (yyval.expr_list)->push_back((yyvsp[0].expression));
 
 
     }
-#line 2473 "aft.tab.c"
+#line 2473 "parser/aft.tab.c"
     break;
 
   case 107: /* expression_list: expression_list COMMA expression  */
-#line 686 "aft.y"
+#line 686 "parser/aft.y"
                                        {
         (yyval.expr_list) = (yyvsp[-2].expr_list);
         (yyval.expr_list)->push_back((yyvsp[0].expression));
     }
-#line 2482 "aft.tab.c"
+#line 2482 "parser/aft.tab.c"
     break;
 
   case 108: /* literal: INTEGER  */
-#line 693 "aft.y"
+#line 693 "parser/aft.y"
             {
         (yyval.expression) = new IntegerLiteral(std::string((yyvsp[0].sval)));
         free((yyvsp[0].sval));
     }
-#line 2491 "aft.tab.c"
+#line 2491 "parser/aft.tab.c"
     break;
 
   case 109: /* literal: FLOAT  */
-#line 697 "aft.y"
+#line 697 "parser/aft.y"
             {
         (yyval.expression) = new FloatLiteral(std::string((yyvsp[0].sval)));
         free((yyvsp[0].sval));
 
     }
-#line 2501 "aft.tab.c"
+#line 2501 "parser/aft.tab.c"
     break;
 
   case 110: /* literal: COMPLEX  */
-#line 702 "aft.y"
+#line 702 "parser/aft.y"
               {
         (yyval.expression) = new ComplexLiteral(std::string((yyvsp[0].sval)));
         free((yyvsp[0].sval));
 
     }
-#line 2511 "aft.tab.c"
+#line 2511 "parser/aft.tab.c"
     break;
 
   case 111: /* literal: TRUE  */
-#line 707 "aft.y"
+#line 707 "parser/aft.y"
            {
         (yyval.expression) = new BoolLiteral(true);
 
     }
-#line 2520 "aft.tab.c"
+#line 2520 "parser/aft.tab.c"
     break;
 
   case 112: /* literal: FALSE  */
-#line 711 "aft.y"
+#line 711 "parser/aft.y"
             {
         (yyval.expression) = new BoolLiteral(false);
     }
-#line 2528 "aft.tab.c"
+#line 2528 "parser/aft.tab.c"
     break;
 
   case 113: /* literal: PI  */
-#line 714 "aft.y"
+#line 714 "parser/aft.y"
          {
         (yyval.expression) = new PiLiteral();
     }
-#line 2536 "aft.tab.c"
+#line 2536 "parser/aft.tab.c"
     break;
 
   case 114: /* literal: vector_literal  */
-#line 717 "aft.y"
+#line 717 "parser/aft.y"
                      {
         (yyval.expression) = (yyvsp[0].expression);
     }
-#line 2544 "aft.tab.c"
+#line 2544 "parser/aft.tab.c"
     break;
 
   case 115: /* literal: STRING  */
-#line 720 "aft.y"
+#line 720 "parser/aft.y"
              {
         (yyval.expression) = new StringLiteral(std::string((yyvsp[0].sval)));
     }
-#line 2552 "aft.tab.c"
+#line 2552 "parser/aft.tab.c"
     break;
 
   case 116: /* vector_literal: LEFTSQUARE vector_elements RIGHTSQUARE  */
-#line 726 "aft.y"
+#line 726 "parser/aft.y"
                                            {
         VectorLiteralExpr* node = new VectorLiteralExpr();
         if ((yyvsp[-1].expr_list)) {
@@ -2563,55 +2563,55 @@ yyreduce:
         }
         (yyval.expression) = node;
     }
-#line 2567 "aft.tab.c"
+#line 2567 "parser/aft.tab.c"
     break;
 
   case 117: /* vector_literal: LEFTSQUARE RIGHTSQUARE  */
-#line 736 "aft.y"
+#line 736 "parser/aft.y"
                              {
         VectorLiteralExpr* node = new VectorLiteralExpr();
         (yyval.expression) = node;
     }
-#line 2576 "aft.tab.c"
+#line 2576 "parser/aft.tab.c"
     break;
 
   case 118: /* vector_elements: expression  */
-#line 742 "aft.y"
+#line 742 "parser/aft.y"
                {
         (yyval.expr_list) = new std::vector<Expression*>();
         (yyval.expr_list)->push_back((yyvsp[0].expression));
 
     }
-#line 2586 "aft.tab.c"
+#line 2586 "parser/aft.tab.c"
     break;
 
   case 119: /* vector_elements: vector_elements COMMA expression  */
-#line 747 "aft.y"
+#line 747 "parser/aft.y"
                                        {
         (yyval.expr_list) = (yyvsp[-2].expr_list);
         (yyval.expr_list)->push_back((yyvsp[0].expression));
     }
-#line 2595 "aft.tab.c"
+#line 2595 "parser/aft.tab.c"
     break;
 
   case 120: /* range_expr: expression RANGE expression  */
-#line 754 "aft.y"
+#line 754 "parser/aft.y"
                                 {
         (yyval.expression) = new RangeExpr(ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)), false);
     }
-#line 2603 "aft.tab.c"
+#line 2603 "parser/aft.tab.c"
     break;
 
   case 121: /* range_expr: expression RANGEUPTO expression  */
-#line 757 "aft.y"
+#line 757 "parser/aft.y"
                                       {
         (yyval.expression) = new RangeExpr(ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)), true);
     }
-#line 2611 "aft.tab.c"
+#line 2611 "parser/aft.tab.c"
     break;
 
 
-#line 2615 "aft.tab.c"
+#line 2615 "parser/aft.tab.c"
 
       default: break;
     }
@@ -2804,7 +2804,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 762 "aft.y"
+#line 762 "parser/aft.y"
 
 
 void yyerror(const char*s) {

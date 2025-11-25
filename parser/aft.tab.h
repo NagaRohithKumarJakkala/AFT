@@ -35,8 +35,8 @@
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
 
-#ifndef YY_YY_AFT_TAB_H_INCLUDED
-# define YY_YY_AFT_TAB_H_INCLUDED
+#ifndef YY_YY_PARSER_AFT_TAB_H_INCLUDED
+# define YY_YY_PARSER_AFT_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -45,7 +45,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 1 "aft.y"
+#line 1 "parser/aft.y"
 
     #include<vector>
     #include<memory>
@@ -53,7 +53,7 @@ extern int yydebug;
     #include "../AST_gen/AST.h"
 
 
-#line 57 "aft.tab.h"
+#line 57 "parser/aft.tab.h"
 
 /* Token kinds.  */
 #ifndef YYTOKENTYPE
@@ -149,7 +149,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 24 "aft.y"
+#line 24 "parser/aft.y"
 
     char* sval;
     struct ASTNode* Node;
@@ -171,7 +171,7 @@ union YYSTYPE
     std::vector<struct Parameter*>* param_list;
     std::vector<std::string>* identifier_list;
 
-#line 175 "aft.tab.h"
+#line 175 "parser/aft.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -186,4 +186,4 @@ extern YYSTYPE yylval;
 int yyparse (void);
 
 
-#endif /* !YY_YY_AFT_TAB_H_INCLUDED  */
+#endif /* !YY_YY_PARSER_AFT_TAB_H_INCLUDED  */
