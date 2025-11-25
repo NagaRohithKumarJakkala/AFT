@@ -1,0 +1,6 @@
+// Expected error: No semantic errors
+fn main() i64 {
+    let x: f64 = 3.14;
+    let y: i64 = x as i64;
+    return y;
+}

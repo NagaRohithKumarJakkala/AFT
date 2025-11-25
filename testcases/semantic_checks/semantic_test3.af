@@ -1,0 +1,6 @@
+// Expected error: Cannot assign to const variable 'x'
+fn main() i64 {
+    const x: i64 = 10;
+    x = 20;
+    return 0;
+}

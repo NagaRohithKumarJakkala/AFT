@@ -1,0 +1,16 @@
+// Expected error: Function 'abs' already declared
+fn abs(x: i64) i64 {
+    if(x < 0) {
+        return -x;
+    }
+    return x;
+}
+fn main() i64 {
+    let x: i64 = -5;
+    let y: i64 = abs(x);
+    const z: i64 = 10;
+    while(y < z) {
+        y = y + 1;
+    }
+    return y;
+}

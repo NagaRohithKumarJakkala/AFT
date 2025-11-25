@@ -1,0 +1,7 @@
+// Expected error: Bitwise operation requires integer types
+fn main() i64 {
+    let x: f64 = 10.5;
+    let y: f64 = 20.5;
+    let z: f64 = x & y;
+    return 0;
+}

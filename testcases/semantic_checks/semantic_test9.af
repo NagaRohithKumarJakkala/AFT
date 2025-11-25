@@ -1,0 +1,8 @@
+// Expected error: Continue statement outside of loop
+fn main() i64 {
+    let x: i64 = 10;
+    if(x > 5) {
+        continue;
+    }
+    return 0;
+}

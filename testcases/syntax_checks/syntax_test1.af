@@ -1,0 +1,5 @@
+// Expected error: Const variable 'x' must be initialized
+fn main() i64 {
+    const x: i64;
+    return 0;
+}

@@ -1,0 +1,6 @@
+// Expected error: Variable 'x' already declared in this scope
+fn main() i64 {
+    let x: i64 = 10;
+    let x: i64 = 20;
+    return 0;
+}

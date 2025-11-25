@@ -1,4 +1,1 @@
-fn main() i64 {
-    const x: i64;
-    return 0;
-}
+// Expected error: No semantic errors

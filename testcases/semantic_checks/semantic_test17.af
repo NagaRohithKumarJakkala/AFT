@@ -1,0 +1,8 @@
+// Expected error: For loop iterable must be a vector type, got i64
+fn main() i64 {
+    let x: i64 = 10;
+    for i in x {
+        return 1;
+    }
+    return 0;
+}
