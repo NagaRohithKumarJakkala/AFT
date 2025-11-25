@@ -160,6 +160,29 @@ Value* CodeGen::gen_expr(const Expression* e) {
             }
         }
 
+        if(bin->op == BinaryOp::EXPONENTIATE){
+            if (L->getType()->isIntegerTy() && R->getType()->isIntegerTy()) {
+                //TODO: implement convulution
+                //Function* concatFn = functions["vector_concat"];
+                errs() << "Vector convulution not yet implemented\n";
+                //return builder.CreateCall(concatFn, { L, R });
+                return nullptr;
+                auto it = functions.find("integer_exponentiation");
+                if (it == functions.end()) {
+                    errs() << "Internal error: builtin vector_concat not declared\n";
+                    return nullptr;
+                }
+
+                Function* expFn = it->second;
+
+                std::vector<Value*> argsV;
+                argsV.push_back(L);
+                argsV.push_back(R);
+
+                return builder.CreateCall(expFn,argsV,expFn->getReturnType()->isVoidTy() ? "" : "concat.calltmp");
+            }
+        }
+
         bool fp = L->getType()->isFloatingPointTy() || R->getType()->isFloatingPointTy();
         if (fp) {
             if (!L->getType()->isFloatingPointTy())

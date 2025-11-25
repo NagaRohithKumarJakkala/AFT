@@ -8,7 +8,7 @@ int col_num = 0;
 %}
 
 %x COMMENT
-%x STRING
+%x STRING_SQ
 
 %option yylineno
 
@@ -39,33 +39,48 @@ STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
 }
 
 
-\" {
-    BEGIN(STRING);
-    yytext[0] = '\0';      /* clear accumulated text */
+\" {                                
+    BEGIN(STRING_SQ);
+    yymore();                      
 }
 
-<STRING>{
-    {ESCAPE_SEQUENCE}      { /* ok */ }
-    [^\\\"\n]+             { /* plain characters */ }
-    \\(.)                  { /* escaped something */ }
+<STRING_SQ>{
+
+    [^\\\"\n]+   {
+        yymore();                   
+    }
+
+    \\(.)        {
+        yymore();                   
+    }
+
+    {ESCAPE_SEQUENCE} {
+        yymore();                   
+    }
+
     \" {
-           BEGIN(INITIAL);
-           yylval.sval = strdup(yytext);
-           return STRING;
-       }
+        BEGIN(INITIAL);
+
+        int len = yyleng - 2;       
+        char* s = (char*)malloc(len + 1);
+
+        memcpy(s, yytext+1, len);
+        s[len] = '\0';
+
+        yylval.sval = s;
+        return STRING;
+    }
+
     \n {
-           printf("Error: Unterminated string literal at line %d\n", yylineno);
-           BEGIN(INITIAL);
-       }
+        fprintf(stderr, "Error: Unterminated string literal at line %d\n", yylineno);
+        BEGIN(INITIAL);
+    }
+
     <<EOF>> {
-           printf("Error: Unterminated string literal\n");
-           return 0;
-       }
+        fprintf(stderr, "Error: Unterminated string literal\n");
+        return 0;
+    }
 }
-
-
-
-
 
 "..="               { return RANGEUPTO; }
 ".."                { return RANGE; }
