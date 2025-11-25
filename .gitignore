@@ -6,3 +6,5 @@ parser/lex.yy.c
 * a.out
 * .exe
 * .out
+temps/temp.ll
+
