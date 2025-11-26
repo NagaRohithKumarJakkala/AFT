@@ -627,8 +627,8 @@ static const yytype_int16 yyrline[] =
      610,   614,   617,   620,   623,   626,   629,   632,   635,   638,
      641,   644,   647,   650,   653,   656,   659,   662,   665,   668,
      671,   674,   677,   680,   683,   686,   689,   695,   701,   708,
-     712,   717,   722,   726,   729,   732,   735,   741,   752,   759,
-     764,   771,   774
+     712,   717,   727,   730,   733,   736,   739,   745,   756,   763,
+     768,   775,   778
 };
 #endif
 
@@ -2535,56 +2535,60 @@ yyreduce:
   case 111: /* literal: COMPLEX  */
 #line 717 "parser/aft.y"
               {
-        (yyval.expression) = new ComplexLiteral(std::string((yyvsp[0].sval)));
+        std::string t((yyvsp[0].sval));
+        if (!t.empty() && (t.back() == 'j'))
+          t.pop_back();
+        ExprPtr real = std::make_unique<FloatLiteral>("0.0");
+        ExprPtr imag = std::make_unique<FloatLiteral>(t);
+        (yyval.expression) = new ComplexLiteral(std::move(real), std::move(imag));
         free((yyvsp[0].sval));
 
     }
-#line 2543 "parser/aft.tab.c"
+#line 2548 "parser/aft.tab.c"
     break;
 
   case 112: /* literal: TRUE  */
-#line 722 "parser/aft.y"
+#line 727 "parser/aft.y"
            {
         (yyval.expression) = new BoolLiteral(true);
-
     }
-#line 2552 "parser/aft.tab.c"
+#line 2556 "parser/aft.tab.c"
     break;
 
   case 113: /* literal: FALSE  */
-#line 726 "parser/aft.y"
+#line 730 "parser/aft.y"
             {
         (yyval.expression) = new BoolLiteral(false);
     }
-#line 2560 "parser/aft.tab.c"
+#line 2564 "parser/aft.tab.c"
     break;
 
   case 114: /* literal: PI  */
-#line 729 "parser/aft.y"
+#line 733 "parser/aft.y"
          {
         (yyval.expression) = new PiLiteral();
     }
-#line 2568 "parser/aft.tab.c"
+#line 2572 "parser/aft.tab.c"
     break;
 
   case 115: /* literal: vector_literal  */
-#line 732 "parser/aft.y"
+#line 736 "parser/aft.y"
                      {
         (yyval.expression) = (yyvsp[0].expression);
     }
-#line 2576 "parser/aft.tab.c"
+#line 2580 "parser/aft.tab.c"
     break;
 
   case 116: /* literal: STRING  */
-#line 735 "parser/aft.y"
+#line 739 "parser/aft.y"
              {
         (yyval.expression) = new StringLiteral(std::string((yyvsp[0].sval)));
     }
-#line 2584 "parser/aft.tab.c"
+#line 2588 "parser/aft.tab.c"
     break;
 
   case 117: /* vector_literal: LEFTSQUARE vector_elements RIGHTSQUARE  */
-#line 741 "parser/aft.y"
+#line 745 "parser/aft.y"
                                            {
         VectorLiteralExpr* node = new VectorLiteralExpr();
         if ((yyvsp[-1].expr_list)) {
@@ -2596,56 +2600,56 @@ yyreduce:
         node->inferred_type = nullptr;
         (yyval.expression) = node;
     }
-#line 2600 "parser/aft.tab.c"
+#line 2604 "parser/aft.tab.c"
     break;
 
   case 118: /* vector_literal: LEFTSQUARE RIGHTSQUARE  */
-#line 752 "parser/aft.y"
+#line 756 "parser/aft.y"
                              {
         VectorLiteralExpr* node = new VectorLiteralExpr();
         node->inferred_type = nullptr;
         (yyval.expression) = node;
     }
-#line 2610 "parser/aft.tab.c"
+#line 2614 "parser/aft.tab.c"
     break;
 
   case 119: /* vector_elements: expression  */
-#line 759 "parser/aft.y"
+#line 763 "parser/aft.y"
                {
         (yyval.expr_list) = new std::vector<Expression*>();
         (yyval.expr_list)->push_back((yyvsp[0].expression));
 
     }
-#line 2620 "parser/aft.tab.c"
+#line 2624 "parser/aft.tab.c"
     break;
 
   case 120: /* vector_elements: vector_elements COMMA expression  */
-#line 764 "parser/aft.y"
+#line 768 "parser/aft.y"
                                        {
         (yyval.expr_list) = (yyvsp[-2].expr_list);
         (yyval.expr_list)->push_back((yyvsp[0].expression));
     }
-#line 2629 "parser/aft.tab.c"
+#line 2633 "parser/aft.tab.c"
     break;
 
   case 121: /* range_expr: expression RANGE expression  */
-#line 771 "parser/aft.y"
+#line 775 "parser/aft.y"
                                 {
         (yyval.expression) = new RangeExpr(ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)), false);
     }
-#line 2637 "parser/aft.tab.c"
+#line 2641 "parser/aft.tab.c"
     break;
 
   case 122: /* range_expr: expression RANGEUPTO expression  */
-#line 774 "parser/aft.y"
+#line 778 "parser/aft.y"
                                       {
         (yyval.expression) = new RangeExpr(ExprPtr((yyvsp[-2].expression)), ExprPtr((yyvsp[0].expression)), true);
     }
-#line 2645 "parser/aft.tab.c"
+#line 2649 "parser/aft.tab.c"
     break;
 
 
-#line 2649 "parser/aft.tab.c"
+#line 2653 "parser/aft.tab.c"
 
       default: break;
     }
@@ -2838,7 +2842,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 779 "parser/aft.y"
+#line 783 "parser/aft.y"
 
 
 void yyerror(const char*s) {

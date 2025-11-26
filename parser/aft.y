@@ -715,13 +715,17 @@ literal:
 
     }
     | COMPLEX {
-        $$ = new ComplexLiteral(std::string($1));
+        std::string t($1);
+        if (!t.empty() && (t.back() == 'j'))
+          t.pop_back();
+        ExprPtr real = std::make_unique<FloatLiteral>("0.0");
+        ExprPtr imag = std::make_unique<FloatLiteral>(t);
+        $$ = new ComplexLiteral(std::move(real), std::move(imag));
         free($1);
 
     }
     | TRUE {
         $$ = new BoolLiteral(true);
-
     }
     | FALSE {
         $$ = new BoolLiteral(false);

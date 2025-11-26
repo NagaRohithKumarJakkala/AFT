@@ -42,53 +42,26 @@ ifend:                                            ; preds = %else
 
 define void @main() {
 entry:
-  %i = alloca i64, align 8
-  %c = alloca ptr, align 8
-  %0 = call ptr @vec_create(i32 5, i64 6)
+  %ys = alloca ptr, align 8
+  %0 = call ptr @vec_create(i32 13, i64 3)
   %1 = call ptr @vec_index_ptr(ptr %0, i64 0)
-  store i64 1, ptr %1, align 4
+  store double 1.000000e+01, ptr %1, align 8
   %2 = call ptr @vec_index_ptr(ptr %0, i64 1)
-  store i64 2, ptr %2, align 4
+  store double 2.000000e+01, ptr %2, align 8
   %3 = call ptr @vec_index_ptr(ptr %0, i64 2)
-  store i64 3, ptr %3, align 4
-  %4 = call ptr @vec_index_ptr(ptr %0, i64 3)
-  store i64 4, ptr %4, align 4
-  %5 = call ptr @vec_index_ptr(ptr %0, i64 4)
-  store i64 5, ptr %5, align 4
-  %6 = call ptr @vec_index_ptr(ptr %0, i64 5)
-  store i64 6, ptr %6, align 4
-  %vreverse = call ptr @vector_reverse(ptr %0)
-  store ptr %vreverse, ptr %c, align 8
-  store i64 0, ptr %i, align 4
-  br label %for.cond
-
-for.cond:                                         ; preds = %for.step, %entry
-  %7 = load i64, ptr %i, align 4
-  %8 = icmp sle i64 %7, 5
-  br i1 %8, label %for.body, label %for.end
-
-for.body:                                         ; preds = %for.cond
-  %c1 = load ptr, ptr %c, align 8
-  %i2 = load i64, ptr %i, align 4
-  %9 = getelementptr inbounds nuw %VecHeader, ptr %c1, i32 0, i32 0
-  %10 = load ptr, ptr %9, align 8
-  %11 = getelementptr inbounds nuw %VecHeader, ptr %c1, i32 0, i32 1
-  %12 = load i64, ptr %11, align 4
-  %13 = getelementptr inbounds nuw %VecHeader, ptr %c1, i32 0, i32 2
-  %14 = load i64, ptr %13, align 4
-  %15 = getelementptr inbounds nuw %VecHeader, ptr %c1, i32 0, i32 3
-  %16 = load i32, ptr %15, align 4
-  %17 = call ptr @vec_index_ptr(ptr %c1, i64 %i2)
-  %18 = load i64, ptr %17, align 4
-  %19 = call i32 (ptr, ...) @printf(ptr @0, i64 %18)
-  br label %for.step
-
-for.step:                                         ; preds = %for.body
-  %20 = load i64, ptr %i, align 4
-  %21 = add i64 %20, 1
-  store i64 %21, ptr %i, align 4
-  br label %for.cond
-
-for.end:                                          ; preds = %for.cond
+  store double 3.000000e+01, ptr %3, align 8
+  store ptr %0, ptr %ys, align 8
+  %ys1 = load ptr, ptr %ys, align 8
+  %4 = getelementptr inbounds nuw %VecHeader, ptr %ys1, i32 0, i32 0
+  %5 = load ptr, ptr %4, align 8
+  %6 = getelementptr inbounds nuw %VecHeader, ptr %ys1, i32 0, i32 1
+  %7 = load i64, ptr %6, align 4
+  %8 = getelementptr inbounds nuw %VecHeader, ptr %ys1, i32 0, i32 2
+  %9 = load i64, ptr %8, align 4
+  %10 = getelementptr inbounds nuw %VecHeader, ptr %ys1, i32 0, i32 3
+  %11 = load i32, ptr %10, align 4
+  %12 = call ptr @vec_index_ptr(ptr %ys1, i64 2)
+  %13 = load i64, ptr %12, align 4
+  %14 = call i32 (ptr, ...) @printf(ptr @0, i64 %13)
   ret void
 }

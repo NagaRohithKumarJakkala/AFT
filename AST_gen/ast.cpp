@@ -181,7 +181,12 @@ void FloatLiteral::print(int level) {
 
 void ComplexLiteral::print(int level) {
     indent(level);
-    std::cout << "ComplexLiteral: " << text << "\n";
+    std::cout << std::string(level, ' ') << "ComplexLiteral:\n";
+        std::cout << std::string(level+2, ' ') << "Real:\n";
+        real->print(level+1);
+        std::cout << std::string(level+2, ' ') << "Imag:\n";
+        imag->print(level+1);
+
 }
 
 void BoolLiteral::print(int level) {

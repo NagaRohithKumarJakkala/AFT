@@ -241,8 +241,12 @@ struct FloatLiteral : public LiteralExpr {
 };
 
 struct ComplexLiteral : public LiteralExpr {
-  std::string text;
-  ComplexLiteral(std::string t) : text(std::move(t)) {}
+  ExprPtr real;
+  ExprPtr imag;
+
+  ComplexLiteral(ExprPtr re, ExprPtr im)
+        : real(std::move(re)), imag(std::move(im)) {}
+
   void print(int level) override;
 };
 

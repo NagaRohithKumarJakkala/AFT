@@ -1,6 +1,57 @@
 #include "semanticAnalyzer.h"
 #include <iostream>
 
+// Helper: implicit primitive numeric conversions
+static bool can_implicitly_convert_primitive(PrimitiveTypeEnum from,
+                                             PrimitiveTypeEnum to) {
+    if (from == to) return true;
+
+    auto is_int = [](PrimitiveTypeEnum t) {
+        switch (t) {
+            case PrimitiveTypeEnum::I8:
+            case PrimitiveTypeEnum::I16:
+            case PrimitiveTypeEnum::I32:
+            case PrimitiveTypeEnum::I64:
+            case PrimitiveTypeEnum::I128:
+            case PrimitiveTypeEnum::U8:
+            case PrimitiveTypeEnum::U16:
+            case PrimitiveTypeEnum::U32:
+            case PrimitiveTypeEnum::U64:
+            case PrimitiveTypeEnum::U128:
+                return true;
+            default:
+                return false;
+        }
+    };
+
+    auto is_float = [](PrimitiveTypeEnum t) {
+        return t == PrimitiveTypeEnum::F32 || t == PrimitiveTypeEnum::F64;
+    };
+
+    auto is_complex = [](PrimitiveTypeEnum t) {
+        return t == PrimitiveTypeEnum::C32 || t == PrimitiveTypeEnum::C64;
+    };
+
+    // int -> float or complex
+    if (is_int(from) && is_float(to))  return true;
+    if (is_int(from) && is_complex(to)) return true;
+
+    // float -> complex
+    if (is_float(from) && is_complex(to)) return true;
+
+    // float widening: f32 -> f64
+    if (from == PrimitiveTypeEnum::F32 && to == PrimitiveTypeEnum::F64)
+        return true;
+
+    // complex widening: c32 -> c64
+    if (from == PrimitiveTypeEnum::C32 && to == PrimitiveTypeEnum::C64)
+        return true;
+
+    return false;
+}
+
+
+
 SymbolTable::SymbolTable(){
     enter_scope();
 }
