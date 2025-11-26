@@ -735,46 +735,56 @@ bool SemanticAnalyzer::check_type_compatibility(const TypePtr& left, const TypeP
     if(!left || !right){
         return false;
     }
-    
-    Types& L = *left;
-    Types& R = *right;
-    
-    if(typeid(L) != typeid(R)){
-        return false;
-    }
-    
-    if(auto left_prim = dynamic_cast<PrimitiveType*>(left.get())){
-        auto right_prim = dynamic_cast<PrimitiveType*>(right.get());
-        if(left_prim->type == right_prim->type){
+
+    if (auto Lp = dynamic_cast<PrimitiveType*>(left.get())) {
+        auto Rp = dynamic_cast<PrimitiveType*>(right.get());
+        if (!Rp) return false;
+
+
+    if (Lp->type == Rp->type)
+        return true;
+
+    bool left_is_complex =
+            (Lp->type == PrimitiveTypeEnum::C32 ||
+             Lp->type == PrimitiveTypeEnum::C64);
+
+        bool right_is_int_or_float =
+            is_integer_type(right) || is_float_type(right);
+
+        if (left_is_complex && right_is_int_or_float)
             return true;
-        }
-    }
-    
-    if(auto left_struct = dynamic_cast<StructType*>(left.get())){
-        auto right_struct = dynamic_cast<StructType*>(right.get());
-        if(left_struct->name == right_struct->name){
+
+        // complex widening: c32 → c64
+        if (Lp->type == PrimitiveTypeEnum::C64 &&
+            Rp->type == PrimitiveTypeEnum::C32)
             return true;
-        }
+
+        // Everything else: STRICT
+        return false;
+
     }
-    
-   if (auto left_vec = dynamic_cast<VectorType*>(left.get())) {
-    auto right_vec = dynamic_cast<VectorType*>(right.get());
-    if (!right_vec) return false;
 
-    // Element types must be compatible
-    if (!check_type_compatibility(left_vec->element_type, right_vec->element_type))
-        return false;
+    if (auto Ls = dynamic_cast<StructType*>(left.get())) {
+        auto Rs = dynamic_cast<StructType*>(right.get());
+        if (!Rs) return false;
 
-    // If both have fixed lengths, they must match
-    if (left_vec->fixed_length != 0 &&
-        right_vec->fixed_length != 0 &&
-        left_vec->fixed_length != right_vec->fixed_length)
-        return false;
+        return Ls->name == Rs->name;
+    }
 
-    return true;
-}
- 
-    
+    if (auto Lv = dynamic_cast<VectorType*>(left.get())) {
+        auto Rv = dynamic_cast<VectorType*>(right.get());
+        if (!Rv) return false;
+
+        if (!check_type_compatibility(Lv->element_type, Rv->element_type))
+            return false;
+
+        if (Lv->fixed_length != 0 &&
+            Rv->fixed_length != 0 &&
+            Lv->fixed_length != Rv->fixed_length)
+            return false;
+
+        return true;
+    }
     return false;
 }
 

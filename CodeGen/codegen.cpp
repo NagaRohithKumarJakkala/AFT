@@ -30,6 +30,37 @@ int CodeGen::typeIdFromLLVM(llvm::Type *T) {
     return E_UNKNOWN;
 }
 
+Value* CodeGen::promoteToComplex(Value* v) {
+    llvm::Type *Ty = v->getType();
+
+    if (auto *ST = dyn_cast<llvm::StructType>(Ty)) {
+        if (ST->getNumElements() == 2 &&
+            ST->getElementType(0)->isDoubleTy() &&
+            ST->getElementType(1)->isDoubleTy())
+            return v;
+    }
+
+    // Convert scalar → double
+    if (Ty->isIntegerTy())
+        v = builder.CreateSIToFP(v, Type::getDoubleTy(ctx));
+    if (Ty->isFloatTy())
+        v = builder.CreateFPExt(v, Type::getDoubleTy(ctx));
+
+    // Make {v, 0.0}
+    llvm::StructType *C64 =
+        llvm::StructType::get(ctx, {
+            Type::getDoubleTy(ctx),
+            Type::getDoubleTy(ctx)
+        });
+
+    Value *zero = ConstantFP::get(Type::getDoubleTy(ctx), 0.0);
+
+    Value *u = UndefValue::get(C64);
+    u = builder.CreateInsertValue(u, v, {0});
+    u = builder.CreateInsertValue(u, zero, {1});
+    return u;
+}
+
 
 int CodeGen::primitive_type_id(const Types* t) {
     if (!t) return E_UNKNOWN;
@@ -154,6 +185,28 @@ Value* CodeGen::boolToI1(IRBuilder<> &B, Value *v) {
 
 Value* CodeGen::gen_expr(const Expression* e) {
     if (!e) return nullptr;
+    if (auto *cl = dynamic_cast<const ComplexLiteral*>(e)) {
+    Value *re = gen_expr(cl->real.get());
+    Value *im = gen_expr(cl->imag.get());
+
+    // Promote to double
+    if (!re->getType()->isDoubleTy())
+        re = builder.CreateSIToFP(re, Type::getDoubleTy(ctx));
+    if (!im->getType()->isDoubleTy())
+        im = builder.CreateSIToFP(im, Type::getDoubleTy(ctx));
+
+    // Build { double, double }
+    llvm::StructType *C64 =
+        llvm::StructType::get(ctx, {
+            llvm::Type::getDoubleTy(ctx),
+            llvm::Type::getDoubleTy(ctx)
+        });
+
+    Value *undef = UndefValue::get(C64);
+    undef = builder.CreateInsertValue(undef, re, {0});
+    undef = builder.CreateInsertValue(undef, im, {1});
+    return undef;
+}
     if (auto *id = dynamic_cast<const IdentifierExpr*>(e)) {
         if (auto *A = lookup_var(id->name)) {
             return builder.CreateLoad(A->getAllocatedType(), A, id->name.c_str());
@@ -251,13 +304,90 @@ Value* CodeGen::gen_expr(const Expression* e) {
         }
     }
     if (auto *bin = dynamic_cast<const BinaryExpression*>(e)) {
-        Value *L = gen_expr(bin->left.get());
+                Value *L = gen_expr(bin->left.get());
         Value *R = gen_expr(bin->right.get());
         if (!L||!R){
             return nullptr;
         }
 
-        if (bin->op == BinaryOp::OR) {
+
+        auto isComplex = [&](Value* v) {
+    if (auto *ST = dyn_cast<llvm::StructType>(v->getType())) {
+        return ST->getNumElements() == 2 &&
+               ST->getElementType(0)->isDoubleTy() &&
+               ST->getElementType(1)->isDoubleTy();
+    }
+    return false;
+        };
+        bool Lc = isComplex(L);
+bool Rc = isComplex(R);
+
+if (Lc || Rc) {
+    L = promoteToComplex(L);
+    R = promoteToComplex(R);
+
+    Value *Lr = builder.CreateExtractValue(L, {0});
+    Value *Li = builder.CreateExtractValue(L, {1});
+    Value *Rr = builder.CreateExtractValue(R, {0});
+    Value *Ri = builder.CreateExtractValue(R, {1});
+
+    llvm::Type *D = llvm::Type::getDoubleTy(ctx);
+    llvm::StructType *C64 =
+        llvm::StructType::get(ctx, {D, D});
+
+    auto pack = [&](Value* re, Value* im) {
+        Value *u = llvm::UndefValue::get(C64);
+        u = builder.CreateInsertValue(u, re, {0});
+        u = builder.CreateInsertValue(u, im, {1});
+        return u;
+    };
+
+    switch (bin->op) {
+        case BinaryOp::PLUS:
+            return pack(builder.CreateFAdd(Lr, Rr),
+                        builder.CreateFAdd(Li, Ri));
+
+        case BinaryOp::MINUS:
+            return pack(builder.CreateFSub(Lr, Rr),
+                        builder.CreateFSub(Li, Ri));
+
+        case BinaryOp::MULTIPLY: {
+            Value *re = builder.CreateFSub(builder.CreateFMul(Lr, Rr),
+                                           builder.CreateFMul(Li, Ri));
+            Value *im = builder.CreateFAdd(builder.CreateFMul(Lr, Ri),
+                                           builder.CreateFMul(Li, Rr));
+            return pack(re, im);
+        }
+
+        case BinaryOp::DIVIDE: {
+            Value *den = builder.CreateFAdd(builder.CreateFMul(Rr,Rr),
+                                            builder.CreateFMul(Ri,Ri));
+
+            Value *re_num = builder.CreateFAdd(builder.CreateFMul(Lr,Rr),
+                                               builder.CreateFMul(Li,Ri));
+            Value *im_num = builder.CreateFSub(builder.CreateFMul(Li,Rr),
+                                               builder.CreateFMul(Lr,Ri));
+
+            return pack(builder.CreateFDiv(re_num, den),
+                        builder.CreateFDiv(im_num, den));
+        }
+
+        case BinaryOp::EQUALS:
+            return builder.CreateAnd(
+                builder.CreateFCmpOEQ(Lr, Rr),
+                builder.CreateFCmpOEQ(Li, Ri)
+            );
+        default:
+                // TODO:PRINT ERROR
+                return nullptr;
+    }
+
+    llvm::errs() << "Complex operator not implemented\n";
+    return nullptr;
+}
+
+
+       if (bin->op == BinaryOp::OR) {
     if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
         Function *concatFn = functions["vector_concat"];
         return builder.CreateCall(concatFn, {L, R}, "vconcat");

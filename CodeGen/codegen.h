@@ -67,4 +67,6 @@ struct CodeGen{
     // void storeVectorElement(const VectorInfo &V, Value* index, Value* rhs);
     void storeVectorElementTyped(const VectorInfo &V,Value* index,Value* rhs,llvm::Type* elemType);
     Value* loadVectorElementTyped(const VectorInfo &V,Value* index,llvm::Type* expectedType);
+
+Value* promoteToComplex(Value* v) ;
 };

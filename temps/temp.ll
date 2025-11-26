@@ -1,10 +1,6 @@
 ; ModuleID = 'my_program'
 source_filename = "my_program"
 
-%VecHeader = type { ptr, i64, i64, i32 }
-
-@0 = private unnamed_addr constant [6 x i8] c"%lld\0A\00", align 1
-
 declare i32 @printf(ptr, ...)
 
 declare ptr @vec_create(i32, i64)
@@ -42,26 +38,21 @@ ifend:                                            ; preds = %else
 
 define void @main() {
 entry:
-  %ys = alloca ptr, align 8
-  %0 = call ptr @vec_create(i32 13, i64 3)
-  %1 = call ptr @vec_index_ptr(ptr %0, i64 0)
-  store double 1.000000e+01, ptr %1, align 8
-  %2 = call ptr @vec_index_ptr(ptr %0, i64 1)
-  store double 2.000000e+01, ptr %2, align 8
-  %3 = call ptr @vec_index_ptr(ptr %0, i64 2)
-  store double 3.000000e+01, ptr %3, align 8
-  store ptr %0, ptr %ys, align 8
-  %ys1 = load ptr, ptr %ys, align 8
-  %4 = getelementptr inbounds nuw %VecHeader, ptr %ys1, i32 0, i32 0
-  %5 = load ptr, ptr %4, align 8
-  %6 = getelementptr inbounds nuw %VecHeader, ptr %ys1, i32 0, i32 1
-  %7 = load i64, ptr %6, align 4
-  %8 = getelementptr inbounds nuw %VecHeader, ptr %ys1, i32 0, i32 2
-  %9 = load i64, ptr %8, align 4
-  %10 = getelementptr inbounds nuw %VecHeader, ptr %ys1, i32 0, i32 3
-  %11 = load i32, ptr %10, align 4
-  %12 = call ptr @vec_index_ptr(ptr %ys1, i64 2)
-  %13 = load i64, ptr %12, align 4
-  %14 = call i32 (ptr, ...) @printf(ptr @0, i64 %13)
+  %c = alloca { double, double }, align 8
+  %b = alloca { double, double }, align 8
+  %a = alloca { double, double }, align 8
+  store { double, double } { double 2.000000e+00, double 3.000000e+00 }, ptr %a, align 8
+  store { double, double } { double 5.000000e+00, double 4.000000e+00 }, ptr %b, align 8
+  %a1 = load { double, double }, ptr %a, align 8
+  %b2 = load { double, double }, ptr %b, align 8
+  %0 = extractvalue { double, double } %a1, 0
+  %1 = extractvalue { double, double } %a1, 1
+  %2 = extractvalue { double, double } %b2, 0
+  %3 = extractvalue { double, double } %b2, 1
+  %4 = fadd double %0, %2
+  %5 = fadd double %1, %3
+  %6 = insertvalue { double, double } undef, double %4, 0
+  %7 = insertvalue { double, double } %6, double %5, 1
+  store { double, double } %7, ptr %c, align 8
   ret void
 }

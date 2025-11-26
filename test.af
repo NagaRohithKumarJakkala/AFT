@@ -1,0 +1,5 @@
+fn main(){
+    let a = 2 + 3j;
+    let b = 5 + 4j;
+    let c = a+b;
+}
