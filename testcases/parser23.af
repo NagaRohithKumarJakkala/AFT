@@ -1,0 +1,5 @@
+fn main() {
+    let flags = [true, false, true];
+    print(flags[1]);
+}
+

@@ -170,6 +170,128 @@ void vec_free(void *vec) {
     free(vh);
 }
 
+void* vector_concat(void *aPtr, void *bPtr) {
+    VecHeader *a = (VecHeader*)aPtr;
+    VecHeader *b = (VecHeader*)bPtr;
+    if (!a || !b) return NULL;
+
+    if (a->elemType != b->elemType) {
+        fprintf(stderr, "vector_concat: type mismatch %d vs %d\n",
+                a->elemType, b->elemType);
+        return NULL;
+    }
+
+    size_t esz = elem_size(a->elemType);
+    int64_t newLen = a->length + b->length;
+
+    // Allocate new vector with full capacity
+    VecHeader *out = (VecHeader*)vec_create(a->elemType, newLen);
+
+    // Copy A’s data
+    memcpy((char*)out->data,
+           (char*)a->data,
+           (size_t)a->length * esz);
+
+    // Copy B’s data after A
+    memcpy((char*)out->data + (size_t)a->length * esz,
+           (char*)b->data,
+           (size_t)b->length * esz);
+
+    return out;
+}
+
+
+
+void* vector_convolution(void *aPtr, void *bPtr) {
+    VecHeader *a = (VecHeader*)aPtr;
+    VecHeader *b = (VecHeader*)bPtr;
+    if (!a || !b) return NULL;
+
+    if (a->elemType != b->elemType) {
+        fprintf(stderr, "vector_convolution: type mismatch %d vs %d\n",
+                a->elemType, b->elemType);
+        return NULL;
+    }
+
+    if (!(a->elemType == E_I64 || a->elemType == E_F64)) {
+        fprintf(stderr, "vector_convolution: only I64/F64 supported\n");
+        return NULL;
+    }
+
+    int64_t n = a->length;
+    int64_t m = b->length;
+    int64_t outLen = n + m - 1;
+
+    VecHeader *out = vec_create(a->elemType, outLen);
+
+    size_t esz = elem_size(a->elemType);
+
+    if (a->elemType == E_I64) {
+        int64_t *A = (int64_t*)a->data;
+        int64_t *B = (int64_t*)b->data;
+        int64_t *O = (int64_t*)out->data;
+
+        for (int64_t k = 0; k < outLen; k++) {
+            long long sum = 0;
+            for (int64_t i = 0; i < n; i++) {
+                int64_t j = k - i;
+                if (j >= 0 && j < m)
+                    sum += A[i] * B[j];
+            }
+            O[k] = sum;
+        }
+    }
+    else if (a->elemType == E_F64) {
+        double *A = (double*)a->data;
+        double *B = (double*)b->data;
+        double *O = (double*)out->data;
+
+        for (int64_t k = 0; k < outLen; k++) {
+            double sum = 0.0;
+            for (int64_t i = 0; i < n; i++) {
+                int64_t j = k - i;
+                if (j >= 0 && j < m)
+                    sum += A[i] * B[j];
+            }
+            O[k] = sum;
+        }
+    }
+
+    return out;
+}
+
+void* vector_reverse(void *vecPtr) {
+    VecHeader *v = (VecHeader*)vecPtr;
+    if (!v) return NULL;
+
+    VecHeader *out = vec_create(v->elemType, v->length);
+    size_t esz = elem_size(v->elemType);
+
+    for (int64_t i = 0; i < v->length; i++) {
+        memcpy((char*)out->data + (v->length - 1 - i) * esz,
+               (char*)v->data + i * esz,
+               esz);
+    }
+
+    return out;
+}
+
+int64_t vector_len(void *vecPtr) {
+    VecHeader *v = (VecHeader*)vecPtr;
+    if (!v) return 0;
+    return v->length;
+}
+
+int64_t vector_size(void *vecPtr) {
+    VecHeader *v = (VecHeader*)vecPtr;
+    if (!v) return 0;
+    return v->length * elem_size(v->elemType);
+}
+
+
+
+
+
 #ifdef __cplusplus
 }
 #endif

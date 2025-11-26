@@ -1,0 +1,7 @@
+fn main() {
+    let v = [1, 2, 3];
+    print(v[0]);
+    print(v[1]);
+    print(v[2]);
+}
+

@@ -59,6 +59,8 @@ struct CodeGen{
     Function* declare_vec_index_ptr();
     Function* declare_vec_free();
     Function* declare_vec_push();
+    Function* declare_vector_reverse();
+
 
     VectorInfo unpackVector(Value* vecHeader);
     // Value* loadVectorElement(const VectorInfo &V, Value* index);

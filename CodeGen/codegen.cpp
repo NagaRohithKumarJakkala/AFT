@@ -111,7 +111,6 @@ AllocaInst* CodeGen::createEntryAlloca(Function *F, llvm::Type *Ty, const Twine 
 
 llvm::Type* CodeGen::lower_type(const ::Types* t){
     if(!t){
-        std::cerr<<"calling nullptr"<<"\n";
         return llvm::Type::getInt64Ty(ctx);
     }
     if(auto * pt = dynamic_cast<const PrimitiveType*>(t)){
@@ -241,17 +240,14 @@ Value* CodeGen::gen_expr(const Expression* e) {
                 return builder.CreateNot(b);
             }
             case UnaryOp::REVERSE:{
-            if (v->getType()->isPointerTy()) {
-                errs()<<"reverse for vectors not implemented yet";
-                return nullptr;
+                if (un->op == UnaryOp::REVERSE) {
+    Function *rev = functions["vector_reverse"];
+    return builder.CreateCall(rev, {v}, "vreverse");
+}
+
+
             }
-            else{
-                errs()<<"reverse will not work for non vectors";
-                return nullptr;
-                    exit(1);
-            }
-            }
-            default: return v;
+                       default: return v;
         }
     }
     if (auto *bin = dynamic_cast<const BinaryExpression*>(e)) {
@@ -260,61 +256,23 @@ Value* CodeGen::gen_expr(const Expression* e) {
         if (!L||!R){
             return nullptr;
         }
+
         if (bin->op == BinaryOp::OR) {
-            if (auto *LStructTy = llvm::dyn_cast<llvm::StructType>(L->getType())) {
-                if (auto *RStructTy = llvm::dyn_cast<llvm::StructType>(R->getType())) {
-                    Value *dataPtr = builder.CreateExtractValue(L, {0});
-                    llvm::Type *elemTy = dataPtr->getType();
-            
-                    Function* concatFn;
-                    if (elemTy->isIntegerTy(64)) {
-                        auto it = functions.find("vector_concat_i64");
-                        if (it == functions.end()) {
-                            errs() << "Internal error: vector_concat_i64 not declared\n";
-                            return nullptr;
-                        }
-                        concatFn = it->second;
-                    } else if (elemTy->isDoubleTy()) {
-                        auto it = functions.find("vector_concat_f64");
-                        if (it == functions.end()) {
-                            errs() << "Internal error: vector_concat_f64 not declared\n";
-                            return nullptr;
-                        }
-                        concatFn = it->second;
-                    } else {
-                        errs() << "Unsupported vector element type for concatenation\n";
-                        return nullptr;
-                    }
-            
-                    std::vector<Value*> argsV = {L, R};
-                    return builder.CreateCall(concatFn, argsV, "concat.result");
-                }
-            }
-        }
-        if(bin->op == BinaryOp::CONVOLUTION){
-            if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
-                //TODO: implement convulution
-                //Function* concatFn = functions["vector_concat"];
-                errs() << "Vector convulution not yet implemented\n";
-                //return builder.CreateCall(concatFn, { L, R });
-                return nullptr;
-                auto it = functions.find("vector_convulution");
-                if (it == functions.end()) {
-                    errs() << "Internal error: builtin vector_concat not declared\n";
-                    return nullptr;
-                }
+    if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
+        Function *concatFn = functions["vector_concat"];
+        return builder.CreateCall(concatFn, {L, R}, "vconcat");
+    }
 
-                Function* convolveFn = it->second;
+            if (bin->op == BinaryOp::CONVOLUTION) {
+    if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
+        Function *convFn = functions["vector_convolution"];
+        return builder.CreateCall(convFn, {L, R}, "vconv");
+    }
+}
 
-                std::vector<Value*> argsV;
-                argsV.push_back(L);
-                argsV.push_back(R);
+}
 
-                return builder.CreateCall(convolveFn,argsV,convolveFn->getReturnType()->isVoidTy() ? "" : "concat.calltmp");
-            }
-
-            
-        }
+        
         if(bin->op == BinaryOp::EXPONENTIATE){
             if (L->getType()->isIntegerTy() && R->getType()->isIntegerTy()) {
                 //TODO: implement convulution
@@ -373,9 +331,7 @@ Value* CodeGen::gen_expr(const Expression* e) {
         Value *index  = gen_expr(idx->index.get());
 
         VectorInfo V = unpackVector(vecPtr);
-        if(!resultTy){
-            cerr<<"return nullptr"<<"\n";
-        }
+        
         llvm::Type *expectedType = lower_type(resultTy.get());
     
         return loadVectorElementTyped(V, index, expectedType);
@@ -904,6 +860,8 @@ void CodeGen::declare_builtin_functions(){
     functions["vec_index_ptr"]  = declare_vec_index_ptr();
     functions["vec_free"]       = declare_vec_free();
     functions["vec_push"]       = declare_vec_push();
+    functions["vector_reverse"] = declare_vector_reverse();
+
 
 }
 
@@ -1101,5 +1059,14 @@ Value* CodeGen::loadVectorElementTyped(const VectorInfo &V,Value* index,llvm::Ty
     );
 
     return builder.CreateLoad(expectedType, elemPtr);
+}
+
+Function* CodeGen::declare_vector_reverse() {
+    FunctionType* FT = FunctionType::get(
+        PointerType::get(Type::getInt8Ty(ctx),0),
+        { PointerType::get(Type::getInt8Ty(ctx),0) },
+        false );
+
+    return Function::Create(FT,Function::ExternalLinkage, "vector_reverse", mod.get());
 }
 
