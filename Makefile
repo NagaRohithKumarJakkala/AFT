@@ -31,6 +31,16 @@ AST_gen/print_ast.o:AST_gen/ast.cpp AST_gen/AST.h
 	$(CXX) $(CXXFLAGS) AST_gen/ast.cpp -o AST_gen/ast.o
 CodeGen/codegen.o: CodeGen/codegen.cpp CodeGen/codegen.h AST_gen/AST.h SemanticAnalyser/semanticAnalyzer.h
 	$(CXX) $(CXXFLAGS) CodeGen/codegen.cpp -o CodeGen/codegen.o
+
+CodeGen/builtin_codegen.o: CodeGen/builtin_codegen.cpp CodeGen/codegen.h AST_gen/AST.h SemanticAnalyser/semanticAnalyzer.h
+	$(CXX) $(CXXFLAGS) CodeGen/builtin_codegen.cpp -o CodeGen/builtin_codegen.o
+
+run_time/builtins.o: run_time/builtins.cpp
+	$(CXX) $(CXXFLAGS) run_time/builtins.cpp -o run_time/builtins.o
+
+external_functions/vector_runtime.o: external_functions/vector_runtime.c external_functions/elem_ids.h
+	$(CC) $(CFLAGS) -c external_functions/vector_runtime.c -o external_functions/vector_runtime.o
+
 SemanticAnalyser/semanticAnalyzer.o: SemanticAnalyser/semanticAnalyzer.cpp parser/aft.tab.h
 	$(CXX) $(CXXFLAGS) SemanticAnalyser/semanticAnalyzer.cpp -o SemanticAnalyser/semanticAnalyzer.o
 
@@ -40,26 +50,14 @@ $(RUNTIME_DIR)/%.o: $(RUNTIME_DIR)/%.c $(RUNTIME_DIR)/elem_ids.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
-
-main: AST_gen/ast.o parser/aft.tab.o parser/lex.yy.o CodeGen/codegen.o SemanticAnalyser/semanticAnalyzer.o main.o $(RUNTIME_OBJS)
-	$(CXX)  parser/aft.tab.o parser/lex.yy.o AST_gen/ast.o CodeGen/codegen.o SemanticAnalyser/semanticAnalyzer.o main.o $(RUNTIME_OBJS) $(LINKFLAGS) -o main
+main: AST_gen/ast.o parser/aft.tab.o parser/lex.yy.o CodeGen/codegen.o CodeGen/builtin_codegen.o SemanticAnalyser/semanticAnalyzer.o run_time/builtins.o main.o external_functions/vector_runtime.o
+	$(CXX)  parser/aft.tab.o parser/lex.yy.o AST_gen/ast.o CodeGen/codegen.o CodeGen/builtin_codegen.o SemanticAnalyser/semanticAnalyzer.o run_time/builtins.o main.o external_functions/vector_runtime.o $(LINKFLAGS) -o main
 
 build:
-	clang++  -x c++ -g main.cpp parser/aft.tab.c parser/lex.yy.c AST_gen/ast.cpp CodeGen/codegen.cpp SemanticAnalyser/semanticAnalyzer.cpp `llvm-config --cxxflags --ldflags --system-libs --libs core` -frtti -o main
+	clang++  -x c++ -g main.cpp parser/aft.tab.c parser/lex.yy.c AST_gen/ast.cpp CodeGen/codegen.cpp CodeGen/builtin_codegen.cpp run_time/builtins.cpp SemanticAnalyser/semanticAnalyzer.cpp `llvm-config --cxxflags --ldflags --system-libs --libs core` -frtti -o main
 
-
-test : 
-	echo "Running Tests......"
-
-	./main < ../testcases/parser1.af > ast1.txt
-
-	./main < ../testcases/parser2.af > ast2.txt
-
-	./main < ../testcases/parser3.af > ast3.txt
-
-	./main < ../testcases/parser4.af > ast4.txt
-
-	./main < ../testcases/parser5.af > ast5.txt
+a.out: temps/temp.o run_time/builtins.o external_functions/vector_runtime.o
+	$(CXX) temps/temp.o run_time/builtins.o external_functions/vector_runtime.o $(LINKFLAGS) -o a.out
 
 clean :
-	rm -f  AST_gen/ast.o parser/aft.tab.o parser/lex.yy.o CodeGen/codegen.o SemanticAnalyser/semanticAnalyzer.o main.o main
+	rm -f  AST_gen/ast.o parser/aft.tab.o parser/lex.yy.o CodeGen/codegen.o SemanticAnalyser/semanticAnalyzer.o main.o main run_time/builtins.o CodeGen/builtin_codegen.o parser/aft.tab.c parser/aft.tab.h parser/lex.yy.c
