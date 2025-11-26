@@ -42,7 +42,7 @@ define void @main() {
 entry:
   %c = alloca ptr, align 8
   %b = alloca ptr, align 8
-  %0 = call ptr @vec_create(i32 4, i64 3)
+  %0 = call ptr @vec_create(i32 5, i64 3)
   %1 = call ptr @vec_index_ptr(ptr %0, i64 0)
   store i64 20, ptr %1, align 4
   %2 = call ptr @vec_index_ptr(ptr %0, i64 1)
@@ -63,13 +63,13 @@ entry:
   %12 = load i64, ptr %11, align 4
   %13 = getelementptr inbounds nuw { ptr, i64, i64, i32 }, ptr %b2, i32 0, i32 3
   %14 = load i32, ptr %13, align 4
-  %15 = call ptr @vec_index_ptr(ptr %8, i64 2)
+  %15 = call ptr @vec_index_ptr(ptr %b2, i64 2)
   switch i32 %14, label %vec.store.merge [
-    i32 1, label %vec.store
-    i32 3, label %vec.store3
-    i32 4, label %vec.store4
-    i32 11, label %vec.store5
-    i32 12, label %vec.store6
+    i32 2, label %vec.store
+    i32 4, label %vec.store3
+    i32 5, label %vec.store4
+    i32 12, label %vec.store5
+    i32 13, label %vec.store6
     i32 16, label %vec.store7
   ]
 
@@ -78,7 +78,7 @@ vec.store.merge:                                  ; preds = %vec.store7, %vec.st
   %16 = call ptr @vec_index_ptr(ptr %b8, i64 2)
   %17 = load i64, ptr %16, align 4
   %18 = call i32 (ptr, ...) @printf(ptr @1, i64 %17)
-  %19 = call ptr @vec_create(i32 12, i64 3)
+  %19 = call ptr @vec_create(i32 13, i64 3)
   %20 = call ptr @vec_index_ptr(ptr %19, i64 0)
   store double 3.000000e+01, ptr %20, align 8
   %21 = call ptr @vec_index_ptr(ptr %19, i64 1)

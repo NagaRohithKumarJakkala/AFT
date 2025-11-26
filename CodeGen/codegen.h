@@ -3,16 +3,7 @@
 using namespace llvm;
 using namespace std;
 
-enum ElemTypeId {
-    E_UNKNOWN = 0,
 
-    E_I8 = 1,   E_I16,  E_I32,  E_I64,  E_I128,
-    E_U8,       E_U16,  E_U32,  E_U64,  E_U128,
-    E_F32,      E_F64,
-    E_C32,      E_C64,
-    E_BOOL,
-    E_STR
-};
 
 struct VectorInfo {
     llvm::Value* header;

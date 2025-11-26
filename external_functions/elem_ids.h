@@ -1,6 +1,6 @@
 #pragma once
 
-enum {
+enum ElemTypeId{
     E_UNKNOWN = 0,
     E_BOOL    = 1,
 

@@ -1,4 +1,5 @@
 #include "codegen.h"
+#include "../external_functions/elem_ids.h"
 
 int CodeGen::typeIdFromLLVM(llvm::Type *T) {
     if (T->isIntegerTy(1)) return E_BOOL;
@@ -1029,7 +1030,8 @@ Value* CodeGen::loadVectorElement(const VectorInfo &V, Value* index) {
     Function* F = builder.GetInsertBlock()->getParent();
     Function* indexFn = functions["vec_index_ptr"];
 
-    Value* rawPtr = builder.CreateCall(indexFn, {V.dataPtr, index});
+    // Value* rawPtr = builder.CreateCall(indexFn, {V.dataPtr, index});
+     Value* rawPtr = builder.CreateCall(indexFn, {V.header, index});
 
     BasicBlock* mergeBB = BasicBlock::Create(ctx, "vec.load.merge", F);
     AllocaInst* result = createEntryAlloca(F, Type::getInt64Ty(ctx), "vec_load_tmp");
@@ -1073,7 +1075,8 @@ Value* CodeGen::loadVectorElement(const VectorInfo &V, Value* index) {
 void CodeGen::storeVectorElement(const VectorInfo &V, Value* index, Value* rhs) {
     Function* F = builder.GetInsertBlock()->getParent();
     Function* indexFn = functions["vec_index_ptr"];
-    Value* rawPtr = builder.CreateCall(indexFn, {V.dataPtr, index});
+    // Value* rawPtr = builder.CreateCall(indexFn, {V.dataPtr, index});
+     Value* rawPtr = builder.CreateCall(indexFn, {V.header, index});
 
     BasicBlock* mergeBB = BasicBlock::Create(ctx, "vec.store.merge", F);
     auto* sw = builder.CreateSwitch(V.typeId, mergeBB, 6);
