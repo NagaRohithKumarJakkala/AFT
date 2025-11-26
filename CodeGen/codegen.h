@@ -61,8 +61,8 @@ struct CodeGen{
     Function* declare_vec_push();
 
     VectorInfo unpackVector(Value* vecHeader);
-    Value* loadVectorElement(const VectorInfo &V, Value* index);
-    void storeVectorElement(const VectorInfo &V, Value* index, Value* rhs);
-
-
+    // Value* loadVectorElement(const VectorInfo &V, Value* index);
+    // void storeVectorElement(const VectorInfo &V, Value* index, Value* rhs);
+    void storeVectorElementTyped(const VectorInfo &V,Value* index,Value* rhs,llvm::Type* elemType);
+    Value* loadVectorElementTyped(const VectorInfo &V,Value* index,llvm::Type* expectedType);
 };

@@ -568,24 +568,55 @@ TypePtr SemanticAnalyzer::infer_type(Expression* expr){
         return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64);
     }
     
-    if(auto vec_lit = dynamic_cast<VectorLiteralExpr*>(expr)){
-        if(!vec_lit->elements.empty()){
-            TypePtr elem_type = infer_type(vec_lit->elements[0].get());
-            return std::make_unique<VectorType>(elem_type->clone());
-        }
-        return std::make_unique<VectorType>(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64));
+    if (auto vec_lit = dynamic_cast<VectorLiteralExpr*>(expr)) {
+
+    // If we inferred before, reuse it
+    if (vec_lit->inferred_type) {
+        return vec_lit->inferred_type->clone();
     }
-    
-    if(auto id = dynamic_cast<IdentifierExpr*>(expr)){
-        Symbol* sym = sym_table.find(id->name);
-        if(!sym){
-            report_error("Undeclared identifier '" + id->name + "'");
-            return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
-        }
-        if(sym->type){
-            return sym->type->clone();
-        }
+
+    // Empty vector → default element type = i64
+    TypePtr element_type;
+    if (vec_lit->elements.empty()) {
+        element_type = std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
+    } else {
+        element_type = infer_type(vec_lit->elements[0].get());
     }
+
+    // Build vector type with element type + fixed size
+    auto vec_type = std::make_unique<VectorType>(element_type->clone());
+    vec_type->fixed_length = vec_lit->elements.size();
+
+    // Cache inside literal
+    vec_lit->inferred_type = vec_type->clone();
+
+    return vec_type;
+}
+    if (auto id = dynamic_cast<IdentifierExpr*>(expr)) {
+
+    Symbol* sym = sym_table.find(id->name);
+    if (!sym) {
+        report_error("Undeclared identifier '" + id->name + "'");
+        return nullptr;
+    }
+    if (!sym->type) {
+        report_error("Identifier '" + id->name + "' has no type");
+        return nullptr;
+    }
+
+    // SPECIAL HANDLING FOR VECTOR TYPES
+    if (auto* vt = dynamic_cast<VectorType*>(sym->type.get())) {
+
+        auto cloned = std::make_unique<VectorType>(vt->element_type->clone());
+        cloned->fixed_length = vt->fixed_length; // copy new field
+
+        return cloned;
+    }
+
+    // All other types clone normally
+    return sym->type->clone();
+}
+
 
     if (auto un = dynamic_cast<UnaryExpression*>(expr)) {
         TypePtr operand_type = infer_type(un->operand.get());
@@ -612,10 +643,15 @@ TypePtr SemanticAnalyzer::infer_type(Expression* expr){
             case BinaryOp::OR:
                 return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::BOOL);
             default:
-                if(left_type){
-                    return left_type->clone();
+                if (is_vector_type(left_type)) {
+                    auto* LV = dynamic_cast<VectorType*>(left_type.get());
+                    auto out = std::make_unique<VectorType>(LV->element_type->clone());
+                    out->fixed_length = 0; // result length depends on operation
+                    return out;
                 }
-                return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
+                return left_type ? left_type->clone()
+                     : std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
+
         }
     }
     
@@ -670,12 +706,23 @@ bool SemanticAnalyzer::check_type_compatibility(const TypePtr& left, const TypeP
         }
     }
     
-    if(auto left_vec = dynamic_cast<VectorType*>(left.get())){
-        auto right_vec = dynamic_cast<VectorType*>(right.get());
-        if(check_type_compatibility(left_vec->element_type, right_vec->element_type)){
-            return true;
-        }
-    }
+   if (auto left_vec = dynamic_cast<VectorType*>(left.get())) {
+    auto right_vec = dynamic_cast<VectorType*>(right.get());
+    if (!right_vec) return false;
+
+    // Element types must be compatible
+    if (!check_type_compatibility(left_vec->element_type, right_vec->element_type))
+        return false;
+
+    // If both have fixed lengths, they must match
+    if (left_vec->fixed_length != 0 &&
+        right_vec->fixed_length != 0 &&
+        left_vec->fixed_length != right_vec->fixed_length)
+        return false;
+
+    return true;
+}
+ 
     
     return false;
 }
@@ -904,10 +951,37 @@ void SemanticAnalyzer::print_errors() const{
         std::cerr << err << std::endl;
     }
 }
+// TypePtr SemanticAnalyzer::get_index_expr_type(const IndexExpression* idx) {
+//     TypePtr objType = infer_type(idx->object.get());
+//     if (auto* vt = dynamic_cast<VectorType*>(objType.get())) {
+//         return vt->element_type->clone();
+//     }
+//     return nullptr;
+// }
+
+
 TypePtr SemanticAnalyzer::get_index_expr_type(const IndexExpression* idx) {
-    TypePtr objType = infer_type(idx->object.get());
-    if (auto* vt = dynamic_cast<VectorType*>(objType.get())) {
-        return vt->element_type->clone();
+
+    // Case 1: Object is an identifier → get the symbol type (most reliable)
+    if (auto* id = dynamic_cast<IdentifierExpr*>(idx->object.get())) {
+        Symbol* sym = sym_table.find(id->name);
+        if (sym && sym->type) {
+            if (auto* vt = dynamic_cast<VectorType*>(sym->type.get())) {
+                return vt->element_type->clone();
+            }
+        }
     }
+
+    // Case 2: Vector literal → infer normally
+    TypePtr t = infer_type(idx->object.get());
+    if (auto* vt = dynamic_cast<VectorType*>(t.get())) {
+    auto out = vt->element_type->clone();
+    return out;
+}
+
+    
+
+    report_error("Indexing a non-vector type");
     return nullptr;
 }
+

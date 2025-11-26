@@ -116,6 +116,7 @@ struct PrimitiveType : public Types {
 
 struct VectorType : public Types {
   TypePtr element_type;
+    size_t fixed_length;
   VectorType(TypePtr elem) : element_type(std::move(elem)) {}
   void print(int level) override;
   std::unique_ptr<Types> clone() const override;
@@ -264,6 +265,7 @@ struct StringLiteral : public LiteralExpr {
 
 struct VectorLiteralExpr : public LiteralExpr {
   std::vector<ExprPtr> elements;
+    TypePtr inferred_type;
   void print(int level) override;
 };
 

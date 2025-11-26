@@ -268,7 +268,9 @@ primitive_type:
 
 vector_type:
     LEFTSQUARE type RIGHTSQUARE {
-        $$ = new VectorType(TypePtr($2));
+        auto vt = new VectorType(TypePtr($2));
+        vt->fixed_length = 0;
+        $$ = vt;
     }
     ;
 
@@ -744,10 +746,12 @@ vector_literal:
             }
             delete $2;
         }
+        node->inferred_type = nullptr;
         $$ = node;
     }
     | LEFTSQUARE RIGHTSQUARE {
         VectorLiteralExpr* node = new VectorLiteralExpr();
+        node->inferred_type = nullptr;
         $$ = node;
     }
 
