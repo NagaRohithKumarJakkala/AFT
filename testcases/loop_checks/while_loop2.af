@@ -1,0 +1,11 @@
+fn main() {
+    let i = 0;
+    let out: [i32] = [];
+
+    while i < 4 {
+        out = out || [i * i];
+        i = i + 1;
+    }
+
+    print(out);
+}
