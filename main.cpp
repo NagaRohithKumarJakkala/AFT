@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
     }
 
 
-    CodeGen CG(semantic_analyzer.get_symbol_table(), "my_program");
+    CodeGen CG(semantic_analyzer.get_symbol_table(), "my_program",&semantic_analyzer);
     CG.gen_program(general_block);
     CG.mod->print(outs(), nullptr);
     return 0;

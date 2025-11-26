@@ -1,43 +1,4 @@
-fn abs(a: i8) i8 {
-    if (a < 0) { return -a; }
-    return a;
-}
-
-fn abs(a: i16) i16 {
-    if (a < 0) { return -a; }
-    return a;
-}
-
-fn abs(a: i32) i32 {
-    if (a < 0) { return -a; }
-    return a;
-}
-
 fn abs(a: i64) i64 {
     if (a < 0) { return -a; }
     return a;
 }
-
-fn abs(a: i128) i128 {
-    if (a < 0) { return -a; }
-    return a;
-}
-
-fn abs(a: f32) f32 {
-    if (a < 0.) { return -a; }
-    return a;
-}
-
-fn abs(a: f64) f64 {
-    if (a < 0.) { return -a; }
-    return a;
-}
-
-fn abs(a: c32) f32 {
-    return sqrt(a.re * a.re + a.im * a.im);
-}
-
-fn abs(a: c64) f64 {
-    return sqrt(a.re * a.re + a.im * a.im);
-}
-

@@ -77,6 +77,7 @@ public:
     SymbolTable& get_symbol_table();
     bool has_errors() const;
     void print_errors() const;
+    TypePtr get_index_expr_type(const IndexExpression* idx);
 };
 
 #endif

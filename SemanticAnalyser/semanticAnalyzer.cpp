@@ -631,6 +631,15 @@ TypePtr SemanticAnalyzer::infer_type(Expression* expr){
             }
         }
     }
+
+    if (auto* idx = dynamic_cast<const IndexExpression*>(expr)) {
+        TypePtr t = get_index_expr_type(idx);
+        if (!t) {
+            report_error("Indexing non-vector type");
+        }
+        return t;
+    }
+
     
     return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
 }
@@ -894,4 +903,11 @@ void SemanticAnalyzer::print_errors() const{
     for(const auto& err : errors){
         std::cerr << err << std::endl;
     }
+}
+TypePtr SemanticAnalyzer::get_index_expr_type(const IndexExpression* idx) {
+    TypePtr objType = infer_type(idx->object.get());
+    if (auto* vt = dynamic_cast<VectorType*>(objType.get())) {
+        return vt->element_type->clone();
+    }
+    return nullptr;
 }

@@ -31,11 +31,13 @@ struct CodeGen{
     unique_ptr<Module>mod;
     IRBuilder<> builder;
     SymbolTable &sym_table;
+    SemanticAnalyzer* sem;
     
-    CodeGen(SymbolTable &sym, string moduleName)
+    CodeGen(SymbolTable &sym, string moduleName, SemanticAnalyzer* sem)
     : mod(std::make_unique<Module>(moduleName,ctx)),
         builder(ctx),
-        sym_table(sym){}
+        sym_table(sym),
+        sem(sem){}
     AllocaInst* createEntryAlloca(Function *fn, llvm::Type *ty, const Twine &name);
     llvm::Type* lower_type(const ::Types* t);
     Value* gen_expr(const Expression*e);
