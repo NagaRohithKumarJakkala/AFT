@@ -125,7 +125,23 @@ SemanticAnalyzer::SemanticAnalyzer(){
     builtin_functions.insert("exp");
     builtin_functions.insert("log");
     builtin_functions.insert("dbg");
-
+    builtin_functions.insert("abs");
+    builtin_functions.insert("ln");
+    builtin_functions.insert("log10");
+    builtin_functions.insert("log2");
+    builtin_functions.insert("tan");
+    builtin_functions.insert("arcsin");
+    builtin_functions.insert("arccos");
+    builtin_functions.insert("arctan");
+    builtin_functions.insert("sec");
+    builtin_functions.insert("cosec");
+    builtin_functions.insert("cot");
+    builtin_functions.insert("magnitude");
+    builtin_functions.insert("conj");
+    builtin_functions.insert("arg");
+    builtin_functions.insert("len");
+    builtin_functions.insert("isempty");
+    
     //adding pi constant
     Symbol pi_const;
     pi_const.name = "PI";

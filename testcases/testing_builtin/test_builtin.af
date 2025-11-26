@@ -1,0 +1,146 @@
+fn main() i32 {
+
+    print("=== INTEGER ABS TESTS ===");
+    let a1: i8 = -5 as i8;
+    let a2: i16 = -123 as i16;
+    let a3: i32 = -99999 as i32;
+    let a4: i64 = -12345678;
+
+    print("abs(i8)  = ");
+    print(abs(a1));
+
+    print("abs(i16) = ");
+    print(abs(a2));
+
+    print("abs(i32) = ");
+    print(abs(a3));
+
+    print("abs(i64) = ");
+    print(abs(a4));
+
+
+    print("=== FLOAT ABS TESTS ===");
+    let f1: f32 = -3.5 as f32;
+    let f2: f64 = -99.876;
+
+    print("abs(f32) = ");
+    print(abs(f1));
+
+    print("abs(f64) = ");
+    print(abs(f2));
+
+
+    /*print("=== COMPLEX ABS (MAGNITUDE) TESTS ===");
+    let c1: c32 = [3.0, 4.0];
+    let c2: c64 = [5.0, 12.0];
+
+    print("abs(c32) magnitude = ");
+    print(magnitude(c1));
+
+    print("abs(c64) magnitude = ");
+    print(magnitude(c2));
+*/
+
+    print("=== SQRT TESTS ===");
+    print("sqrt(16) = ");
+    print(sqrt(16));
+
+    print("sqrt(2.5) = ");
+    print(sqrt(2.5));
+
+
+    print("=== EXP / LN / LOG TESTS ===");
+    print("exp(1) = ");
+    print(exp(1));
+
+    print("ln(2.71828) = ");
+    print(ln(2.71828));
+
+    print("log10(1000) = ");
+    print(log10(1000));
+
+    print("log2(1024) = ");
+    print(log2(1024));
+
+
+    print("=== POW TESTS ===");
+    print("pow(2, 10) = ");
+    print(pow(2, 10));
+
+    print("pow(3.5, 3) = ");
+    print(pow(3.5, 3));
+
+
+    print("=== TRIG FUNCTIONS ===");
+    print("sin(PI/2) = ");
+    print(sin(PI / 2));
+
+    print("cos(0) = ");
+    print(cos(0));
+
+    print("tan(1.0) = ");
+    print(tan(1.0));
+
+    print("arcsin(1) = ");
+    print(arcsin(1));
+
+    print("arccos(1) = ");
+    print(arccos(1));
+
+    print("arctan(1) = ");
+    print(arctan(1));
+
+    print("sec(0) = ");
+    print(sec(0));
+
+    print("cosec(PI/2) = ");
+    print(cosec(PI / 2));
+
+    print("cot(1.0) = ");
+    print(cot(1.0));
+
+
+    /*print("=== COMPLEX CONJUGATE ===");
+    let z1: c32 = [2.5, 4.0];
+    let z2: c64 = [-3.0, 7.0];
+
+    print("conj(c32) = ");
+    let tmp1 = conj(z1);
+    print(tmp1[0]);
+    print(tmp1[1]);
+
+    print("conj(c64) = ");
+    let tmp2 = conj(z2);
+    print(tmp2[0]);
+    print(tmp2[1]);
+
+
+    print("=== COMPLEX ARGUMENT ===");
+    print("arg([1,1]) = ");
+    let z3: c32 = [1.0, 1.0];
+    print(arg(z3));
+
+    print("arg([0,1]) = ");
+    let z4: c32 = [0.0, 1.0];
+    print(arg(z4));
+
+
+    print("=== VECTOR + TYPECAST + RANGE TEST SANITY ===");
+
+    let v = [1,2,3,4];
+    print("len(v) = ");
+    print(len(v));
+
+    print("isempty(v) = ");
+    print(isempty(v));
+
+    print("range test 1..5:");
+    let r = 1..5;
+    print(r[0]);
+    print(r[1]);
+    print(r[2]);
+    print(r[3]);
+    print(r[4]);*/
+
+    return 0 as i32;
+}
