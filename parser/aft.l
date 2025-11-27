@@ -3,6 +3,7 @@
 #include <string.h>
 
 int col_num = 0;
+int syntax_error_count = 0;
 
 #define YY_USER_ACTION col_num += yyleng;
 %}
@@ -35,7 +36,13 @@ STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
     [^*\n]+             { /* Skip comment content */ }
     "*"                 { /* Skip lone asterisk */ }
     \n                  { /* Skip new line */ }
-    <<EOF>>             { printf("Error: Unterminated comment\n"); return 0; }
+    <<EOF>>             { 
+        fprintf(stderr, "\n[LEXICAL ERROR] Line %d, Column %d: Unterminated comment\n", 
+                yylineno, col_num);
+        fprintf(stderr, "  Help: Make sure every '/*' has a matching '*/'\n");
+        syntax_error_count++;
+        return 0; 
+    }
 }
 
 
@@ -72,12 +79,19 @@ STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
     }
 
     \n {
-        fprintf(stderr, "Error: Unterminated string literal at line %d\n", yylineno);
+        fprintf(stderr, "\n[LEXICAL ERROR] Line %d, Column %d: Unterminated string literal\n", 
+                yylineno, col_num);
+        fprintf(stderr, "  String started but not closed with a closing quote (\").\n");
+        fprintf(stderr, "  Help: Add a closing quote before the newline.\n");
+        syntax_error_count++;
         BEGIN(INITIAL);
     }
 
     <<EOF>> {
-        fprintf(stderr, "Error: Unterminated string literal\n");
+        fprintf(stderr, "\n[LEXICAL ERROR] Line %d: Unterminated string literal at end of file\n", 
+                yylineno);
+        fprintf(stderr, "  Help: Add a closing quote (\") before the end of file.\n");
+        syntax_error_count++;
         return 0;
     }
 }
@@ -190,10 +204,13 @@ STRING_CONTENT ([^\\\"\n]|{ESCAPE_SEQUENCE})+
 {ALPHA}{ALPHANUM}*          { yylval.sval = strdup(yytext); return IDENTIFIER;}
 
 \n                  { col_num = 0; }
-.                       {
-                            printf("Unexpected character: '%c' at line %d, column %d\n",
-                                   yytext[0], yylineno, col_num);
-                        }
+.                   {
+    fprintf(stderr, "\n[LEXICAL ERROR] Line %d, Column %d: Unexpected character '%c' (ASCII: %d)\n",
+            yylineno, col_num, yytext[0], (int)yytext[0]);
+    fprintf(stderr, "  This character is not recognized as part of the language syntax.\n");
+    fprintf(stderr, "  Help: Check for typos or invalid symbols.\n");
+    syntax_error_count++;
+}
 
 %%
 
