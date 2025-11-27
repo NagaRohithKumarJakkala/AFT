@@ -4,7 +4,7 @@ FLEX = flex
 LLVM_CONFIG = llvm-config
 CXXFLAGS = -g -c `$(LLVM_CONFIG) --cxxflags` -frtti
 
-LINKFLAGS = `$(LLVM_CONFIG) --ldflags --system-libs --libs core` -frtti
+LINKFLAGS = `$(LLVM_CONFIG) --ldflags --system-libs --libs core native` -frtti
 
 RUNTIME_DIR = external_functions
 RUNTIME_SRCS = $(RUNTIME_DIR)/vector_runtime.c
@@ -14,7 +14,7 @@ CFLAGS += -I$(RUNTIME_DIR)
 CXXFLAGS += -I$(RUNTIME_DIR)
 
 
-all : main
+all : main ast_printer
 
 parser/aft.tab.h parser/aft.tab.c : parser/aft.y
 	bison -d parser/aft.y -o parser/aft.tab.c
@@ -63,4 +63,4 @@ a.out: temps/temp.o run_time/builtins.o external_functions/vector_runtime.o
 	$(CXX) temps/temp.o run_time/builtins.o external_functions/vector_runtime.o $(LINKFLAGS) -o a.out
 
 clean :
-	rm -f  AST_gen/ast.o parser/aft.tab.o parser/lex.yy.o CodeGen/codegen.o SemanticAnalyser/semanticAnalyzer.o main.o main run_time/builtins.o CodeGen/builtin_codegen.o parser/aft.tab.c parser/aft.tab.h parser/lex.yy.c
+	rm -f  AST_gen/ast.o parser/aft.tab.o parser/lex.yy.o parser/aft.tab.c parser/aft.tab.h parser/lex.yy.c  CodeGen/builtin_codegen.o CodeGen/codegen.o external_functions/vector_runtime.o SemanticAnalyser/semanticAnalyzer.o main.o main run_time/builtins.o temps/temp.o temps/temp.ll a.out ast_printer main main.o 
