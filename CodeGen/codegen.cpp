@@ -40,13 +40,11 @@ Value* CodeGen::promoteToComplex(Value* v) {
             return v;
     }
 
-    // Convert scalar → double
     if (Ty->isIntegerTy())
         v = builder.CreateSIToFP(v, Type::getDoubleTy(ctx));
     if (Ty->isFloatTy())
         v = builder.CreateFPExt(v, Type::getDoubleTy(ctx));
 
-    // Make {v, 0.0}
     llvm::StructType *C64 =
         llvm::StructType::get(ctx, {
             Type::getDoubleTy(ctx),
@@ -116,14 +114,14 @@ llvm::Type* CodeGen::elemTypeFromId(int id) {
             return llvm::StructType::get(
                 ctx,
                 { llvm::Type::getFloatTy(ctx),
-                  llvm::Type::getFloatTy(ctx) }
+                    llvm::Type::getFloatTy(ctx) }
             );
 
         case E_C64:
             return llvm::StructType::get(
                 ctx,
                 { llvm::Type::getDoubleTy(ctx),
-                  llvm::Type::getDoubleTy(ctx) }
+                    llvm::Type::getDoubleTy(ctx) }
             );
 
         case E_BOOL: return llvm::Type::getInt1Ty(ctx);
@@ -171,8 +169,8 @@ llvm::Type* CodeGen::prim_to_LLVM( PrimitiveTypeEnum p){
         case PrimitiveTypeEnum::C64: return llvm::StructType::get(ctx, {llvm::Type::getDoubleTy(ctx), llvm::Type::getDoubleTy(ctx)});
         case PrimitiveTypeEnum::BOOL: return llvm::Type::getInt1Ty(ctx);
         case PrimitiveTypeEnum::STR:return llvm::PointerType::get(llvm::Type::getInt8Ty(ctx), 0);
-}
-return nullptr;
+    }
+    return nullptr;
 }
 
 Value* CodeGen::boolToI1(IRBuilder<> &B, Value *v) {
@@ -186,27 +184,25 @@ Value* CodeGen::boolToI1(IRBuilder<> &B, Value *v) {
 Value* CodeGen::gen_expr(const Expression* e) {
     if (!e) return nullptr;
     if (auto *cl = dynamic_cast<const ComplexLiteral*>(e)) {
-    Value *re = gen_expr(cl->real.get());
-    Value *im = gen_expr(cl->imag.get());
+        Value *re = gen_expr(cl->real.get());
+        Value *im = gen_expr(cl->imag.get());
 
-    // Promote to double
-    if (!re->getType()->isDoubleTy())
-        re = builder.CreateSIToFP(re, Type::getDoubleTy(ctx));
-    if (!im->getType()->isDoubleTy())
-        im = builder.CreateSIToFP(im, Type::getDoubleTy(ctx));
+        if (!re->getType()->isDoubleTy())
+            re = builder.CreateSIToFP(re, Type::getDoubleTy(ctx));
+        if (!im->getType()->isDoubleTy())
+            im = builder.CreateSIToFP(im, Type::getDoubleTy(ctx));
 
-    // Build { double, double }
-    llvm::StructType *C64 =
-        llvm::StructType::get(ctx, {
-            llvm::Type::getDoubleTy(ctx),
-            llvm::Type::getDoubleTy(ctx)
-        });
+        llvm::StructType *C64 =
+            llvm::StructType::get(ctx, {
+                llvm::Type::getDoubleTy(ctx),
+                llvm::Type::getDoubleTy(ctx)
+            });
 
-    Value *undef = UndefValue::get(C64);
-    undef = builder.CreateInsertValue(undef, re, {0});
-    undef = builder.CreateInsertValue(undef, im, {1});
-    return undef;
-}
+        Value *undef = UndefValue::get(C64);
+        undef = builder.CreateInsertValue(undef, re, {0});
+        undef = builder.CreateInsertValue(undef, im, {1});
+        return undef;
+    }
     if (auto *id = dynamic_cast<const IdentifierExpr*>(e)) {
         if (auto *A = lookup_var(id->name)) {
             return builder.CreateLoad(A->getAllocatedType(), A, id->name.c_str());
@@ -229,56 +225,54 @@ Value* CodeGen::gen_expr(const Expression* e) {
     }
     if (auto *vec = dynamic_cast<const VectorLiteralExpr*>(e)) {
 
-    size_t n = vec->elements.size();
+        size_t n = vec->elements.size();
 
-    if (!vec->inferred_type) {
-        errs() << "Vector literal missing inferred_type — semantic analyzer bug\n";
-        return nullptr;
-    }
-
-    auto *VT = dynamic_cast<::VectorType*>(vec->inferred_type.get());
-    if (!VT) {
-        errs() << "Vector literal inferred_type is not VectorType\n";
-        return nullptr;
-    }
-
-    // Compute element type ID from AST, not from LLVM IR
-    int elemId = primitive_type_id(VT->element_type.get());
-    Value *elemIdVal = ConstantInt::get(Type::getInt32Ty(ctx), elemId);
-
-    // Create vector buffer
-    Function *vecCreate = functions["vec_create"];
-    Value *vecPtr = builder.CreateCall(
-        vecCreate,
-        {
-            elemIdVal,
-            ConstantInt::get(Type::getInt64Ty(ctx), n)
+        if (!vec->inferred_type) {
+            errs() << "Vector literal missing inferred_type — semantic analyzer bug\n";
+            return nullptr;
         }
-    );
 
-    Function *indexFn = functions["vec_index_ptr"];
+        auto *VT = dynamic_cast<::VectorType*>(vec->inferred_type.get());
+        if (!VT) {
+            errs() << "Vector literal inferred_type is not VectorType\n";
+            return nullptr;
+        }
 
-    for (size_t i = 0; i < n; i++) {
+        int elemId = primitive_type_id(VT->element_type.get());
+        Value *elemIdVal = ConstantInt::get(Type::getInt32Ty(ctx), elemId);
 
-        Value *elemVal = gen_expr(vec->elements[i].get());
-        if (!elemVal) return nullptr;
+        Function *vecCreate = functions["vec_create"];
+        Value *vecPtr = builder.CreateCall(
+            vecCreate,
+            {
+                elemIdVal,
+                ConstantInt::get(Type::getInt64Ty(ctx), n)
+            }
+        );
 
-        Value *index = ConstantInt::get(Type::getInt64Ty(ctx), i);
+        Function *indexFn = functions["vec_index_ptr"];
 
-        Value *rawElemPtr = builder.CreateCall(indexFn, { vecPtr, index });
-        llvm::Type *llvmElemTy = lower_type(VT->element_type.get());
+        for (size_t i = 0; i < n; i++) {
 
-        Value *typedPtr =
-            builder.CreateBitCast(rawElemPtr, llvm::PointerType::get(llvmElemTy, 0));
+            Value *elemVal = gen_expr(vec->elements[i].get());
+            if (!elemVal) return nullptr;
 
-        builder.CreateStore(elemVal, typedPtr);
+            Value *index = ConstantInt::get(Type::getInt64Ty(ctx), i);
+
+            Value *rawElemPtr = builder.CreateCall(indexFn, { vecPtr, index });
+            llvm::Type *llvmElemTy = lower_type(VT->element_type.get());
+
+            Value *typedPtr =
+                builder.CreateBitCast(rawElemPtr, llvm::PointerType::get(llvmElemTy, 0));
+
+            builder.CreateStore(elemVal, typedPtr);
+        }
+
+        return vecPtr;
     }
 
-    return vecPtr;
-}
 
-    
-           
+
     if (auto *str = dynamic_cast<const ::StringLiteral*>(e)){
         return builder.CreateGlobalString(str->value);
     }
@@ -294,17 +288,17 @@ Value* CodeGen::gen_expr(const Expression* e) {
             }
             case UnaryOp::REVERSE:{
                 if (un->op == UnaryOp::REVERSE) {
-    Function *rev = functions["vector_reverse"];
-    return builder.CreateCall(rev, {v}, "vreverse");
-}
+                    Function *rev = functions["vector_reverse"];
+                    return builder.CreateCall(rev, {v}, "vreverse");
+                }
 
 
             }
-                       default: return v;
+            default: return v;
         }
     }
     if (auto *bin = dynamic_cast<const BinaryExpression*>(e)) {
-                Value *L = gen_expr(bin->left.get());
+        Value *L = gen_expr(bin->left.get());
         Value *R = gen_expr(bin->right.get());
         if (!L||!R){
             return nullptr;
@@ -312,97 +306,97 @@ Value* CodeGen::gen_expr(const Expression* e) {
 
 
         auto isComplex = [&](Value* v) {
-    if (auto *ST = dyn_cast<llvm::StructType>(v->getType())) {
-        return ST->getNumElements() == 2 &&
-               ST->getElementType(0)->isDoubleTy() &&
-               ST->getElementType(1)->isDoubleTy();
-    }
-    return false;
+            if (auto *ST = dyn_cast<llvm::StructType>(v->getType())) {
+                return ST->getNumElements() == 2 &&
+                ST->getElementType(0)->isDoubleTy() &&
+                ST->getElementType(1)->isDoubleTy();
+            }
+            return false;
         };
         bool Lc = isComplex(L);
-bool Rc = isComplex(R);
+        bool Rc = isComplex(R);
 
-if (Lc || Rc) {
-    L = promoteToComplex(L);
-    R = promoteToComplex(R);
+        if (Lc || Rc) {
+            L = promoteToComplex(L);
+            R = promoteToComplex(R);
 
-    Value *Lr = builder.CreateExtractValue(L, {0});
-    Value *Li = builder.CreateExtractValue(L, {1});
-    Value *Rr = builder.CreateExtractValue(R, {0});
-    Value *Ri = builder.CreateExtractValue(R, {1});
+            Value *Lr = builder.CreateExtractValue(L, {0});
+            Value *Li = builder.CreateExtractValue(L, {1});
+            Value *Rr = builder.CreateExtractValue(R, {0});
+            Value *Ri = builder.CreateExtractValue(R, {1});
 
-    llvm::Type *D = llvm::Type::getDoubleTy(ctx);
-    llvm::StructType *C64 =
-        llvm::StructType::get(ctx, {D, D});
+            llvm::Type *D = llvm::Type::getDoubleTy(ctx);
+            llvm::StructType *C64 =
+                llvm::StructType::get(ctx, {D, D});
 
-    auto pack = [&](Value* re, Value* im) {
-        Value *u = llvm::UndefValue::get(C64);
-        u = builder.CreateInsertValue(u, re, {0});
-        u = builder.CreateInsertValue(u, im, {1});
-        return u;
-    };
+            auto pack = [&](Value* re, Value* im) {
+                Value *u = llvm::UndefValue::get(C64);
+                u = builder.CreateInsertValue(u, re, {0});
+                u = builder.CreateInsertValue(u, im, {1});
+                return u;
+            };
 
-    switch (bin->op) {
-        case BinaryOp::PLUS:
-            return pack(builder.CreateFAdd(Lr, Rr),
-                        builder.CreateFAdd(Li, Ri));
+            switch (bin->op) {
+                case BinaryOp::PLUS:
+                    return pack(builder.CreateFAdd(Lr, Rr),
+                                builder.CreateFAdd(Li, Ri));
 
-        case BinaryOp::MINUS:
-            return pack(builder.CreateFSub(Lr, Rr),
-                        builder.CreateFSub(Li, Ri));
+                case BinaryOp::MINUS:
+                    return pack(builder.CreateFSub(Lr, Rr),
+                                builder.CreateFSub(Li, Ri));
 
-        case BinaryOp::MULTIPLY: {
-            Value *re = builder.CreateFSub(builder.CreateFMul(Lr, Rr),
-                                           builder.CreateFMul(Li, Ri));
-            Value *im = builder.CreateFAdd(builder.CreateFMul(Lr, Ri),
-                                           builder.CreateFMul(Li, Rr));
-            return pack(re, im);
+                case BinaryOp::MULTIPLY: {
+                    Value *re = builder.CreateFSub(builder.CreateFMul(Lr, Rr),
+                                                   builder.CreateFMul(Li, Ri));
+                    Value *im = builder.CreateFAdd(builder.CreateFMul(Lr, Ri),
+                                                   builder.CreateFMul(Li, Rr));
+                    return pack(re, im);
+                }
+
+                case BinaryOp::DIVIDE: {
+                    Value *den = builder.CreateFAdd(builder.CreateFMul(Rr,Rr),
+                                                    builder.CreateFMul(Ri,Ri));
+
+                    Value *re_num = builder.CreateFAdd(builder.CreateFMul(Lr,Rr),
+                                                       builder.CreateFMul(Li,Ri));
+                    Value *im_num = builder.CreateFSub(builder.CreateFMul(Li,Rr),
+                                                       builder.CreateFMul(Lr,Ri));
+
+                    return pack(builder.CreateFDiv(re_num, den),
+                                builder.CreateFDiv(im_num, den));
+                }
+
+                case BinaryOp::EQUALS:
+                    return builder.CreateAnd(
+                        builder.CreateFCmpOEQ(Lr, Rr),
+                        builder.CreateFCmpOEQ(Li, Ri)
+                    );
+                default:
+                    // TODO:PRINT ERROR
+                    return nullptr;
+            }
+
+            llvm::errs() << "Complex operator not implemented\n";
+            return nullptr;
         }
 
-        case BinaryOp::DIVIDE: {
-            Value *den = builder.CreateFAdd(builder.CreateFMul(Rr,Rr),
-                                            builder.CreateFMul(Ri,Ri));
 
-            Value *re_num = builder.CreateFAdd(builder.CreateFMul(Lr,Rr),
-                                               builder.CreateFMul(Li,Ri));
-            Value *im_num = builder.CreateFSub(builder.CreateFMul(Li,Rr),
-                                               builder.CreateFMul(Lr,Ri));
-
-            return pack(builder.CreateFDiv(re_num, den),
-                        builder.CreateFDiv(im_num, den));
-        }
-
-        case BinaryOp::EQUALS:
-            return builder.CreateAnd(
-                builder.CreateFCmpOEQ(Lr, Rr),
-                builder.CreateFCmpOEQ(Li, Ri)
-            );
-        default:
-                // TODO:PRINT ERROR
-                return nullptr;
-    }
-
-    llvm::errs() << "Complex operator not implemented\n";
-    return nullptr;
-}
-
-
-       if (bin->op == BinaryOp::OR) {
-    if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
-        Function *concatFn = functions["vector_concat"];
-        return builder.CreateCall(concatFn, {L, R}, "vconcat");
-    }
+        if (bin->op == BinaryOp::OR) {
+            if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
+                Function *concatFn = functions["vector_concat"];
+                return builder.CreateCall(concatFn, {L, R}, "vconcat");
+            }
 
             if (bin->op == BinaryOp::CONVOLUTION) {
-    if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
-        Function *convFn = functions["vector_convolution"];
-        return builder.CreateCall(convFn, {L, R}, "vconv");
-    }
-}
+                if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
+                    Function *convFn = functions["vector_convolution"];
+                    return builder.CreateCall(convFn, {L, R}, "vconv");
+                }
+            }
 
-}
+        }
 
-        
+
         if(bin->op == BinaryOp::EXPONENTIATE){
             if (L->getType()->isIntegerTy() && R->getType()->isIntegerTy()) {
                 //TODO: implement convulution
@@ -455,18 +449,18 @@ if (Lc || Rc) {
             default: return nullptr;
         }
     }
-        if (auto *idx = dynamic_cast<const IndexExpression*>(e)) {
+    if (auto *idx = dynamic_cast<const IndexExpression*>(e)) {
         TypePtr resultTy = sem->get_index_expr_type(idx);
         Value *vecPtr = gen_expr(idx->object.get());
         Value *index  = gen_expr(idx->index.get());
 
         VectorInfo V = unpackVector(vecPtr);
-        
+
         llvm::Type *expectedType = lower_type(resultTy.get());
-    
+
         return loadVectorElementTyped(V, index, expectedType);
     }
-         
+
     if (auto *cast = dynamic_cast<const TypeCastExpr*>(e)) {
         Value *v = gen_expr(cast->expr.get()); 
         llvm::Type *dst = lower_type(cast->type.get());
@@ -504,82 +498,82 @@ if (Lc || Rc) {
         }
 
         if (call->callee == "print" || call->callee=="dbg") {
-    auto printfFn = functions["print"];
+            auto printfFn = functions["print"];
 
-    std::vector<Value*> args;
-    Expression* argExpr = call->arguments[0].get();
-    Value* val = gen_expr(argExpr);
+            std::vector<Value*> args;
+            Expression* argExpr = call->arguments[0].get();
+            Value* val = gen_expr(argExpr);
 
-    if (!val) return nullptr;
+            if (!val) return nullptr;
 
-    if (val->getType()->isIntegerTy(1)) {
-        Value *fmt = builder.CreateGlobalString("%s\n");
-        args.push_back(fmt);
-        Value *trueStr = builder.CreateGlobalString("true");
-        Value *falseStr = builder.CreateGlobalString("false");
-        Value *selectedStr = builder.CreateSelect(val, trueStr, falseStr);
-        args.push_back(selectedStr);
-    }
-    else if (val->getType()->isIntegerTy()) {
-        Value *fmt = builder.CreateGlobalString("%lld\n");
-        args.push_back(fmt);
-        if (val->getType() != Type::getInt64Ty(ctx)) {
-            val = builder.CreateSExt(val, Type::getInt64Ty(ctx));
-        }
-        args.push_back(val);
-    }
-    else if (val->getType()->isFloatTy()) {
-        Value *fmt = builder.CreateGlobalString("%f\n");
-        args.push_back(fmt);
-        val = builder.CreateFPExt(val, Type::getDoubleTy(ctx));
-        args.push_back(val);
-    }
-    else if (val->getType()->isDoubleTy()) {
-        Value *fmt = builder.CreateGlobalString("%f\n");
-        args.push_back(fmt);
-        args.push_back(val);
-    }
-    else if (val->getType()->isPointerTy()) {
-        // String/pointer
-        Value *fmt = builder.CreateGlobalString("%s\n");
-        args.push_back(fmt);
-        args.push_back(val);
-    }
-    else if (auto *ST = llvm::dyn_cast<llvm::StructType>(val->getType())) {
-        if (ST->isLiteral() && ST->getNumElements() == 2) {
-            llvm::Type *a = ST->getElementType(0);
-            llvm::Type *b = ST->getElementType(1);
-
-            if (a == llvm::Type::getFloatTy(ctx) && b == llvm::Type::getFloatTy(ctx)) {
-                Value *re = builder.CreateExtractValue(val, {0});
-                Value *im = builder.CreateExtractValue(val, {1});
-
-                Value *fmt = builder.CreateGlobalString("(%f, %f)\n");
-
-                re = builder.CreateFPExt(re, Type::getDoubleTy(ctx));
-                im = builder.CreateFPExt(im, Type::getDoubleTy(ctx));
-
-                return builder.CreateCall(printfFn, {fmt, re, im});
+            if (val->getType()->isIntegerTy(1)) {
+                Value *fmt = builder.CreateGlobalString("%s\n");
+                args.push_back(fmt);
+                Value *trueStr = builder.CreateGlobalString("true");
+                Value *falseStr = builder.CreateGlobalString("false");
+                Value *selectedStr = builder.CreateSelect(val, trueStr, falseStr);
+                args.push_back(selectedStr);
             }
-            if (a == llvm::Type::getDoubleTy(ctx) && b == llvm::Type::getDoubleTy(ctx)) {
-                Value *re = builder.CreateExtractValue(val, {0});
-                Value *im = builder.CreateExtractValue(val, {1});
-
-                Value *fmt = builder.CreateGlobalString("(%f, %f)\n");
-
-                return builder.CreateCall(printfFn, {fmt, re, im});
+            else if (val->getType()->isIntegerTy()) {
+                Value *fmt = builder.CreateGlobalString("%lld\n");
+                args.push_back(fmt);
+                if (val->getType() != Type::getInt64Ty(ctx)) {
+                    val = builder.CreateSExt(val, Type::getInt64Ty(ctx));
+                }
+                args.push_back(val);
             }
+            else if (val->getType()->isFloatTy()) {
+                Value *fmt = builder.CreateGlobalString("%f\n");
+                args.push_back(fmt);
+                val = builder.CreateFPExt(val, Type::getDoubleTy(ctx));
+                args.push_back(val);
+            }
+            else if (val->getType()->isDoubleTy()) {
+                Value *fmt = builder.CreateGlobalString("%f\n");
+                args.push_back(fmt);
+                args.push_back(val);
+            }
+            else if (val->getType()->isPointerTy()) {
+                // String/pointer
+                Value *fmt = builder.CreateGlobalString("%s\n");
+                args.push_back(fmt);
+                args.push_back(val);
+            }
+            else if (auto *ST = llvm::dyn_cast<llvm::StructType>(val->getType())) {
+                if (ST->isLiteral() && ST->getNumElements() == 2) {
+                    llvm::Type *a = ST->getElementType(0);
+                    llvm::Type *b = ST->getElementType(1);
+
+                    if (a == llvm::Type::getFloatTy(ctx) && b == llvm::Type::getFloatTy(ctx)) {
+                        Value *re = builder.CreateExtractValue(val, {0});
+                        Value *im = builder.CreateExtractValue(val, {1});
+
+                        Value *fmt = builder.CreateGlobalString("(%f, %f)\n");
+
+                        re = builder.CreateFPExt(re, Type::getDoubleTy(ctx));
+                        im = builder.CreateFPExt(im, Type::getDoubleTy(ctx));
+
+                        return builder.CreateCall(printfFn, {fmt, re, im});
+                    }
+                    if (a == llvm::Type::getDoubleTy(ctx) && b == llvm::Type::getDoubleTy(ctx)) {
+                        Value *re = builder.CreateExtractValue(val, {0});
+                        Value *im = builder.CreateExtractValue(val, {1});
+
+                        Value *fmt = builder.CreateGlobalString("(%f, %f)\n");
+
+                        return builder.CreateCall(printfFn, {fmt, re, im});
+                    }
+                }
+            }
+            else {
+                errs() << "Unsupported type for print: ";
+                val->getType()->print(errs());
+                errs() << "\n";
+                return nullptr;
+            }
+            return builder.CreateCall(printfFn, args);
         }
-    }
-    else {
-        errs() << "Unsupported type for print: ";
-        val->getType()->print(errs());
-        errs() << "\n";
-        return nullptr;
-    }
-    return builder.CreateCall(printfFn, args);
-}
-        
+
 
         auto it = functions.find(call->callee);
         if (it == functions.end()) return nullptr;
@@ -598,7 +592,7 @@ if (Lc || Rc) {
     if (auto *rng = dynamic_cast<const RangeExpr*>(e)) {
         llvm::StructType *RT = llvm::StructType::get(ctx,
                                                      {llvm::Type::getInt64Ty(ctx),
-                                                        llvm::Type::getInt64Ty(ctx),
+                                                     llvm::Type::getInt64Ty(ctx),
                                                      llvm::Type::getInt1Ty(ctx)});
         Value *start = gen_expr(rng->left.get());
         Value *end = gen_expr(rng->right.get());
@@ -687,7 +681,7 @@ void CodeGen::gen_stmt(const Statement* s,Function* fn){
                         A->getAllocatedType()->isFloatingPointTy())
                         rhs = builder.CreateSIToFP(rhs, A->getAllocatedType());
                     else if (rhs->getType()->isFloatingPointTy() &&
-                         A->getAllocatedType()->isIntegerTy())
+                            A->getAllocatedType()->isIntegerTy())
                         rhs = builder.CreateFPToSI(rhs, A->getAllocatedType());
                 }
 
@@ -695,18 +689,18 @@ void CodeGen::gen_stmt(const Statement* s,Function* fn){
                 continue;
             }
             if (auto *idx = dynamic_cast<IndexExpression*>(target)) {
-    Value* vecHeader = gen_expr(idx->object.get());
-    Value* index     = gen_expr(idx->index.get());
+                Value* vecHeader = gen_expr(idx->object.get());
+                Value* index     = gen_expr(idx->index.get());
 
-    VectorInfo V = unpackVector(vecHeader);
-    TypePtr resultTy = sem->get_index_expr_type(idx);
-    llvm::Type* elemType = lower_type(resultTy.get());
+                VectorInfo V = unpackVector(vecHeader);
+                TypePtr resultTy = sem->get_index_expr_type(idx);
+                llvm::Type* elemType = lower_type(resultTy.get());
 
-    storeVectorElementTyped(V, index, rhs, elemType);
-    continue;
-}
+                storeVectorElementTyped(V, index, rhs, elemType);
+                continue;
+            }
 
-           
+
             errs() << "Invalid assignment target (not lvalue)\n";
         }
         return;
@@ -801,7 +795,16 @@ void CodeGen::gen_stmt(const Statement* s,Function* fn){
 
         builder.SetInsertPoint(CondBB); 
         Value *iVal = builder.CreateLoad(llvm::Type::getInt64Ty(ctx), iAlloca); 
-        Value *cmp  = builder.CreateICmpSLE(iVal, end); 
+        Value *cmp;
+
+        Value* isIncl = incl;  // incl is already an i1
+
+        Value* cmpIncl  = builder.CreateICmpSLE(iVal, end);
+        Value* cmpExcl  = builder.CreateICmpSLT(iVal, end);
+
+        cmp = builder.CreateSelect(isIncl, cmpIncl, cmpExcl);
+
+
         builder.CreateCondBr(cmp, BodyBB, EndBB); 
 
         builder.SetInsertPoint(BodyBB);
@@ -822,14 +825,14 @@ void CodeGen::gen_stmt(const Statement* s,Function* fn){
     }
 }
 void CodeGen::gen_block(const StatementBlock* block, Function* fn){
- for (auto &sp : block->statements) {
-    gen_stmt(sp.get(), fn);
-    if (builder.GetInsertBlock()->getTerminator())
-        break;
+    for (auto &sp : block->statements) {
+        gen_stmt(sp.get(), fn);
+        if (builder.GetInsertBlock()->getTerminator())
+            break;
     } 
 }
 void CodeGen::register_struct(StructDecl* structDecl){
- auto it = structs.find(structDecl->name);
+    auto it = structs.find(structDecl->name);
     llvm::StructType *ST; 
     if (it == structs.end()) { 
         ST = llvm::StructType::create(ctx, structDecl->name);
@@ -887,16 +890,6 @@ void CodeGen::define_function(const FunctionDecl* funcDecl){
     if (funcDecl->body){
         gen_block(funcDecl->body.get(), F);
     }
-    // if (!BB->getTerminator()) {
-    //     if (F->getReturnType()->isVoidTy()){
-    //         builder.CreateRetVoid();
-    //     } else if (F->getReturnType()->isIntegerTy()){
-    //         builder.CreateRet(ConstantInt::get(F->getReturnType(), 0));
-    //     } else{
-    //         builder.CreateUnreachable();
-    //     }
-    // }
-
     BasicBlock *curBB = builder.GetInsertBlock();
     if (curBB && !curBB->getTerminator()) {
         if (F->getReturnType()->isVoidTy()) {
@@ -966,7 +959,7 @@ AllocaInst* CodeGen::lookup_var(const std::string &name) {
     if (s && s->irValue){ 
         return dyn_cast<AllocaInst>(s->irValue);
     }
-        return nullptr;
+    return nullptr;
 }
 
 void CodeGen::push_scope(){
@@ -998,7 +991,7 @@ void CodeGen::declare_builtin_functions(){
 }
 
 Function* CodeGen::declare_print(){
-        llvm::FunctionType* printfType = llvm::FunctionType::get(
+    llvm::FunctionType* printfType = llvm::FunctionType::get(
         llvm::IntegerType::getInt32Ty(ctx),
         llvm::PointerType::get(llvm::Type::getInt8Ty(ctx),0),
         true
@@ -1101,29 +1094,26 @@ VectorInfo CodeGen::unpackVector(Value* vecPtr) {
 
     llvm::Type* i8PtrTy = llvm::PointerType::get(llvm::Type::getInt8Ty(ctx), 0);
 
-    // Create a NON-PACKED struct matching the C VecHeader exactly
     static llvm::StructType* vecHeaderTy = nullptr;
     if (!vecHeaderTy) {
         vecHeaderTy = llvm::StructType::create(ctx, "VecHeader");
 
         vecHeaderTy->setBody(
             {
-                i8PtrTy,                      // void* data      (8 bytes)
-                llvm::Type::getInt64Ty(ctx), // int64 length    (8 bytes)
-                llvm::Type::getInt64Ty(ctx), // int64 capacity  (8 bytes)
-                llvm::Type::getInt32Ty(ctx), // int32 elemType  (4 bytes)
+                i8PtrTy,
+                llvm::Type::getInt64Ty(ctx),
+                llvm::Type::getInt64Ty(ctx),
+                llvm::Type::getInt32Ty(ctx),
             },
-            /*isPacked=*/false                // <-- IMPORTANT FIX
+            false
         );
     }
 
-    // Cast i8* to VecHeader*
     Value* typed = builder.CreateBitCast(
         vecPtr,
         llvm::PointerType::get(vecHeaderTy, 0)
     );
 
-    // Read fields from struct
     v.dataPtr = builder.CreateLoad(
         i8PtrTy,
         builder.CreateStructGEP(vecHeaderTy, typed, 0)
@@ -1154,7 +1144,6 @@ void CodeGen::storeVectorElementTyped(const VectorInfo &V,Value* index,Value* rh
     Value* rawPtr = builder.CreateCall(indexFn, { V.header, index });
     Value* elemPtr = builder.CreateBitCast(rawPtr, PointerType::get(elemType,0));
 
-    // Cast RHS to elemType if needed
     Value* value = rhs;
     llvm::Type* srcTy = rhs->getType();
 

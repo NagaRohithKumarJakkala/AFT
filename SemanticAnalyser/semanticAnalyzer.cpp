@@ -1,7 +1,6 @@
 #include "semanticAnalyzer.h"
 #include <iostream>
 
-// Helper: implicit primitive numeric conversions
 static bool can_implicitly_convert_primitive(PrimitiveTypeEnum from,
                                              PrimitiveTypeEnum to) {
     if (from == to) return true;
@@ -32,18 +31,14 @@ static bool can_implicitly_convert_primitive(PrimitiveTypeEnum from,
         return t == PrimitiveTypeEnum::C32 || t == PrimitiveTypeEnum::C64;
     };
 
-    // int -> float or complex
     if (is_int(from) && is_float(to))  return true;
     if (is_int(from) && is_complex(to)) return true;
 
-    // float -> complex
     if (is_float(from) && is_complex(to)) return true;
 
-    // float widening: f32 -> f64
     if (from == PrimitiveTypeEnum::F32 && to == PrimitiveTypeEnum::F64)
         return true;
 
-    // complex widening: c32 -> c64
     if (from == PrimitiveTypeEnum::C32 && to == PrimitiveTypeEnum::C64)
         return true;
 
@@ -68,7 +63,7 @@ bool SymbolTable::add_symbol(const Symbol& sym){
     if(currentScope.count(sym.name)){
         return false;
     }
-    
+
     Symbol copy;
     copy.name = sym.name;
     copy.kind = sym.kind;
@@ -85,7 +80,7 @@ bool SymbolTable::add_symbol(const Symbol& sym){
     copy.irValue = sym.irValue;
     copy.is_const = sym.is_const;
     copy.line_number = sym.line_number;
-    
+
     currentScope.emplace(copy.name, std::move(copy));
     return true;
 }
@@ -110,11 +105,10 @@ Symbol* SymbolTable::find_in_current_scope(const std::string& name){
 }
 void SymbolTable::clear() {
     scopes.clear();
-    enter_scope(); // start with a global scope
+    enter_scope();
 }
 
 SemanticAnalyzer::SemanticAnalyzer(){
-    //adding built-in functions to be ignored during semantic analysis
     builtin_functions.insert("print");
     builtin_functions.insert("printf");
     builtin_functions.insert("sin");
@@ -140,15 +134,14 @@ SemanticAnalyzer::SemanticAnalyzer(){
     builtin_functions.insert("arg");
     builtin_functions.insert("len");
     builtin_functions.insert("isempty");
-    
-    //adding pi constant
+
     Symbol pi_const;
     pi_const.name = "PI";
     pi_const.kind = SymbolKind::VARIABLE;
     pi_const.type = std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64);
     pi_const.is_const = true;
     sym_table.add_symbol(pi_const);
-    
+
 }
 
 bool SemanticAnalyzer::is_builtin_function(const std::string& name){
@@ -162,13 +155,13 @@ SymbolTable& SemanticAnalyzer::get_symbol_table(){
 void SemanticAnalyzer::check(Program* program){
     if(!program) return;
 
-    sym_table.clear(); // clear all scopes before checking
+    sym_table.clear();
 
 
     for(auto& block : program->Blocks){
         handle_node(block.get());
     }
-    
+
     if(has_errors()){
         print_errors();
     }
@@ -190,13 +183,13 @@ void SemanticAnalyzer::handle_function(FunctionDecl* funcDecl){
     func_sym.name = funcDecl->name;
     func_sym.kind = SymbolKind::FUNCTION;
     func_sym.line_number = current_line;
-    
+
     for(auto& param : funcDecl->params){
         if(param->type){
             func_sym.parameter_types.push_back(param->type->clone());
         }
     }
-    
+
     if(!funcDecl->return_types.empty()){
         current_function_return_types.clear();
         for(const auto& ret_type : funcDecl->return_types){
@@ -207,9 +200,9 @@ void SemanticAnalyzer::handle_function(FunctionDecl* funcDecl){
     if(!sym_table.add_symbol(func_sym)){
         report_error("Function '" + funcDecl->name + "' already declared");
     }
-    
+
     sym_table.enter_scope();
-    
+
     for(auto& param : funcDecl->params){
         Symbol param_sym;
         param_sym.name = param->name;
@@ -218,16 +211,16 @@ void SemanticAnalyzer::handle_function(FunctionDecl* funcDecl){
             param_sym.type = param->type->clone();
         }
         param_sym.line_number = current_line;
-        
+
         if(!sym_table.add_symbol(param_sym)){
             report_error("Parameter '" + param->name + "' already declared");
         }
     }
-    
+
     if(funcDecl->body){
         handle_statement(funcDecl->body.get());
     }
-    
+
     sym_table.leave_scope();
     current_function_return_types.clear();
 
@@ -238,7 +231,7 @@ void SemanticAnalyzer::handle_struct(StructDecl* structDecl){
     struct_sym.name = structDecl->name;
     struct_sym.kind = SymbolKind::STRUCT;
     struct_sym.line_number = current_line;
-    
+
     if(!sym_table.add_symbol(struct_sym)){
         report_error("Struct '" + structDecl->name + "' already declared");
     }
@@ -246,7 +239,7 @@ void SemanticAnalyzer::handle_struct(StructDecl* structDecl){
 
 void SemanticAnalyzer::handle_statement(Statement* stmt){
     if(!stmt) return;
-    
+
     if(auto blk = dynamic_cast<StatementBlock*>(stmt)){
         sym_table.enter_scope();
         for(auto& s : blk->statements){
@@ -255,7 +248,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
         sym_table.leave_scope();
         return;
     }
-    
+
     if(auto let = dynamic_cast<LetDecl*>(stmt)){
         for(size_t i = 0; i < let->names.size(); ++i){
             Symbol var_sym;
@@ -263,7 +256,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
             var_sym.kind = SymbolKind::VARIABLE;
             var_sym.is_const = false;
             var_sym.line_number = current_line;
-            
+
             if(i < let->types.size() && let->types[i]){
                 var_sym.type = let->types[i]->clone();
             } else if(i < let->values.size() && let->values[i]){
@@ -272,17 +265,17 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
                 report_error("Variable '" + let->names[i] + "' declared without type or initializer");
                 continue;
             }
-            
+
             if(i < let->values.size() && let->values[i]){
                 handle_expression(let->values[i].get());
                 TypePtr value_type = infer_type(let->values[i].get());
                 if(!check_type_compatibility(var_sym.type, value_type)){
                     report_error("Type mismatch in initialization of '" + let->names[i] + 
-                              "': expected " + type_to_string(var_sym.type) + 
-                              ", got " + type_to_string(value_type));
+                                 "': expected " + type_to_string(var_sym.type) + 
+                                 ", got " + type_to_string(value_type));
                 }
             }
-            
+
             if(!sym_table.add_symbol(var_sym)){
                 Symbol* existing = sym_table.find_in_current_scope(let->names[i]);
                 if(existing){
@@ -292,20 +285,20 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
         }
         return;
     }
-    
+
     if(auto const_decl = dynamic_cast<ConstDecl*>(stmt)){
         for(size_t i = 0; i < const_decl->names.size(); ++i){
             if(i >= const_decl->values.size() || !const_decl->values[i]){
                 report_error("Const variable '" + const_decl->names[i] + "' must be initialized");
                 continue;
             }
-            
+
             Symbol var_sym;
             var_sym.name = const_decl->names[i];
             var_sym.kind = SymbolKind::VARIABLE;
             var_sym.is_const = true;
             var_sym.line_number = current_line;
-            
+
             if(i < const_decl->types.size() && const_decl->types[i]){
                 var_sym.type = const_decl->types[i]->clone();
             } else {
@@ -313,14 +306,14 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
             }
 
             handle_expression(const_decl->values[i].get());
-            
+
             TypePtr value_type = infer_type(const_decl->values[i].get());
             if(!check_type_compatibility(var_sym.type, value_type)){
                 report_error("Type mismatch in initialization of const '" + const_decl->names[i] + 
-                          "': expected " + type_to_string(var_sym.type) + 
-                          ", got " + type_to_string(value_type));
+                             "': expected " + type_to_string(var_sym.type) + 
+                             ", got " + type_to_string(value_type));
             }
-            
+
             if(!sym_table.add_symbol(var_sym)){
                 report_error("Const '" + const_decl->names[i] + "' already declared");
             }
@@ -331,66 +324,66 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
     if (auto asgn = dynamic_cast<Assignment*>(stmt)) {
         for (size_t i = 0; i < asgn->targets.size(); ++i) {
 
-        Expression* target = asgn->targets[i].get();
-        Expression* value  = asgn->values[i].get();
+            Expression* target = asgn->targets[i].get();
+            Expression* value  = asgn->values[i].get();
 
-        if (auto* id = dynamic_cast<IdentifierExpr*>(target)) {
+            if (auto* id = dynamic_cast<IdentifierExpr*>(target)) {
 
-            Symbol* sym = sym_table.find(id->name);
-            if (!sym) {
-                report_error("Undeclared variable '" + id->name + "'");
+                Symbol* sym = sym_table.find(id->name);
+                if (!sym) {
+                    report_error("Undeclared variable '" + id->name + "'");
+                    continue;
+                }
+
+                if (sym->is_const) {
+                    report_error("Cannot assign to const variable '" + id->name + "'");
+                    continue;
+                }
+
+                handle_expression(value);
+                TypePtr rhs_type = infer_type(value);
+
+                if (!check_type_compatibility(sym->type, rhs_type)) {
+                    report_error(
+                        "Type mismatch in assignment to '" + id->name +
+                        "': expected " + type_to_string(sym->type) +
+                        ", got " + type_to_string(rhs_type));
+                }
+
                 continue;
             }
 
-            if (sym->is_const) {
-                report_error("Cannot assign to const variable '" + id->name + "'");
+            if (auto* idx = dynamic_cast<IndexExpression*>(target)) {
+
+                handle_expression(idx->object.get());
+                TypePtr obj_type = infer_type(idx->object.get());
+
+                auto* vec_type = dynamic_cast<VectorType*>(obj_type.get());
+                if (!vec_type) {
+                    report_error("Left-hand side of indexed assignment must be a vector");
+                    continue;
+                }
+
+                handle_expression(idx->index.get());
+                TypePtr index_type = infer_type(idx->index.get());
+                if (!is_integer_type(index_type)) {
+                    report_error("Vector index must be an integer type");
+                    continue;
+                }
+
+                handle_expression(value);
+                TypePtr rhs_type = infer_type(value);
+                if (!check_type_compatibility(vec_type->element_type, rhs_type)) {
+                    report_error(
+                        "Type mismatch in vector element assignment: expected " +
+                        type_to_string(vec_type->element_type) +
+                        ", got " + type_to_string(rhs_type));
+                }
+
                 continue;
             }
 
-            handle_expression(value);
-            TypePtr rhs_type = infer_type(value);
-
-            if (!check_type_compatibility(sym->type, rhs_type)) {
-                report_error(
-                    "Type mismatch in assignment to '" + id->name +
-                    "': expected " + type_to_string(sym->type) +
-                    ", got " + type_to_string(rhs_type));
-            }
-
-            continue;
-        }
-
-        if (auto* idx = dynamic_cast<IndexExpression*>(target)) {
-
-            handle_expression(idx->object.get());
-            TypePtr obj_type = infer_type(idx->object.get());
-
-            auto* vec_type = dynamic_cast<VectorType*>(obj_type.get());
-            if (!vec_type) {
-                report_error("Left-hand side of indexed assignment must be a vector");
-                continue;
-            }
-
-            handle_expression(idx->index.get());
-            TypePtr index_type = infer_type(idx->index.get());
-            if (!is_integer_type(index_type)) {
-                report_error("Vector index must be an integer type");
-                continue;
-            }
-
-            handle_expression(value);
-            TypePtr rhs_type = infer_type(value);
-            if (!check_type_compatibility(vec_type->element_type, rhs_type)) {
-                report_error(
-                    "Type mismatch in vector element assignment: expected " +
-                    type_to_string(vec_type->element_type) +
-                    ", got " + type_to_string(rhs_type));
-            }
-
-            continue;
-        }
-
-        report_error("Invalid assignment target: not an assignable expression");
+            report_error("Invalid assignment target: not an assignable expression");
         }
         return;
     }
@@ -401,7 +394,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
         if(!prim_type || prim_type->type != PrimitiveTypeEnum::BOOL){
             report_error("If condition must be boolean type, got " + type_to_string(cond_type));
         }
-        
+
         if(ifs->then_block){
             handle_statement(ifs->then_block.get());
         }
@@ -413,7 +406,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
         }
         return;
     }
-    
+
     if(auto wh = dynamic_cast<WhileStmt*>(stmt)){
         handle_expression(wh->condition.get());
         TypePtr cond_type = infer_type(wh->condition.get());
@@ -421,7 +414,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
         if(!prim_type || prim_type->type != PrimitiveTypeEnum::BOOL){
             report_error("While condition must be boolean type, got " + type_to_string(cond_type));
         }
-        
+
         bool was_in_loop = in_loop;
         in_loop = true;
         if(wh->body){
@@ -430,14 +423,14 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
         in_loop = was_in_loop;
         return;
     }
-    
+
     if(auto forst = dynamic_cast<ForStmt*>(stmt)){
         handle_expression(forst->iterable.get());
         TypePtr iter_type = infer_type(forst->iterable.get());
-        
+
         bool is_valid_iterable = false;
         TypePtr element_type = nullptr;
-        
+
         if(is_vector_type(iter_type)){
             is_valid_iterable = true;
             if(auto vec_type = dynamic_cast<VectorType*>(iter_type.get())){
@@ -449,46 +442,46 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
             is_valid_iterable = true;
             element_type = std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
         }
-        
+
         if(!is_valid_iterable){
             report_error("For loop iterable must be a vector or range type, got " + type_to_string(iter_type));
         }
-        
+
         sym_table.enter_scope();
-        
+
         Symbol iter_sym;
         iter_sym.name = forst->iterator;
         iter_sym.kind = SymbolKind::VARIABLE;
         iter_sym.line_number = current_line;
-        
+
         if(element_type){
             iter_sym.type = element_type->clone();
         } else {
             iter_sym.type = std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
         }
-        
+
         sym_table.add_symbol(iter_sym);
-        
+
         bool was_in_loop = in_loop;
         in_loop = true;
         if(forst->body){
             handle_statement(forst->body.get());
         }
         in_loop = was_in_loop;
-        
+
         sym_table.leave_scope();
         return;
     }
 
-    
+
     if(auto repeat_stmt = dynamic_cast<RepeatStmt*>(stmt)){
         handle_expression(repeat_stmt->count.get());
         TypePtr count_type = infer_type(repeat_stmt->count.get());
-        
+
         if(!is_integer_type(count_type)){
             report_error("Repeat count must be an integer type, got " + type_to_string(count_type));
         }
-        
+
         bool was_in_loop = in_loop;
         in_loop = true;
         if(repeat_stmt->body){
@@ -497,7 +490,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
         in_loop = was_in_loop;
         return;
     }
-    
+
     if(auto ret = dynamic_cast<ReturnStmt*>(stmt)){
 
         if(current_function_return_types.empty()){
@@ -507,7 +500,7 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
 
         if(ret->values.size() != current_function_return_types.size()){
             report_error("Return statement expects " + std::to_string(current_function_return_types.size()) + 
-                        " values, got " + std::to_string(ret->values.size()));
+                         " values, got " + std::to_string(ret->values.size()));
             return;
         }
 
@@ -521,27 +514,27 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
 
             if(!check_type_compatibility(current_function_return_types[i], return_type)){
                 report_error("Return type mismatch for value " + std::to_string(i+1) + ": expected " +
-                    type_to_string(current_function_return_types[i]) + ", got " + type_to_string(return_type));
+                             type_to_string(current_function_return_types[i]) + ", got " + type_to_string(return_type));
             }
         }
         return;
 
     }
-    
+
     if(auto break_stmt = dynamic_cast<BreakStmt*>(stmt)){
         if(!in_loop){
             report_error("Break statement outside of loop");
         }
         return;
     }
-    
+
     if(auto continue_stmt = dynamic_cast<ContinueStmt*>(stmt)){
         if(!in_loop){
             report_error("Continue statement outside of loop");
         }
         return;
     }
-    
+
     if(auto exprs = dynamic_cast<ExprStmt*>(stmt)){
         if(exprs->expr){
             handle_expression(exprs->expr.get());
@@ -552,18 +545,18 @@ void SemanticAnalyzer::handle_statement(Statement* stmt){
 
 void SemanticAnalyzer::handle_expression(Expression* expr){
     if(!expr) return;
-    
+
     if(auto id = dynamic_cast<IdentifierExpr*>(expr)){
         if(!sym_table.find(id->name)){
             llvm::errs() << "[semantic] warning: undeclared identifier: " << id->name << "\n";
         }
         return;
     }
-    
+
     if(auto lit = dynamic_cast<LiteralExpr*>(expr)){
         return;
     }
-    
+
     if(auto call = dynamic_cast<FunctionCallExpr*>(expr)){
         if(!is_builtin_function(call->callee)){
             Symbol* fn = sym_table.find(call->callee);
@@ -576,14 +569,14 @@ void SemanticAnalyzer::handle_expression(Expression* expr){
         }
         return;
     }
-    
+
     if(auto un = dynamic_cast<UnaryExpression*>(expr)){
         TypePtr operand_type = infer_type(un->operand.get());
         check_unary_operation(un->op, operand_type, current_line);
         handle_expression(un->operand.get());
         return;
     }
-    
+
     if(auto bin = dynamic_cast<BinaryExpression*>(expr)){
         TypePtr left_type = infer_type(bin->left.get());
         TypePtr right_type = infer_type(bin->right.get());
@@ -592,11 +585,11 @@ void SemanticAnalyzer::handle_expression(Expression* expr){
         handle_expression(bin->right.get());
         return;
     }
-    
+
     if(auto cast_expr = dynamic_cast<TypeCastExpr*>(expr)){
         TypePtr from_type = infer_type(cast_expr->expr.get());
         TypePtr to_type = cast_expr->type->clone();
-        
+
         if(!can_cast_to(from_type, to_type)){
             report_error("Cannot cast from " + type_to_string(from_type) + " to " + type_to_string(to_type));
         }
@@ -609,79 +602,77 @@ TypePtr SemanticAnalyzer::infer_type(Expression* expr){
     if(!expr){
         return nullptr;
     }
-    
+
     if(auto int_lit = dynamic_cast<IntegerLiteral*>(expr)){
         return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
     }
-    
+
     if(auto float_lit = dynamic_cast<FloatLiteral*>(expr)){
         return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64);
     }
-    
+
     if(auto complex_lit = dynamic_cast<ComplexLiteral*>(expr)){
         return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::C64);
     }
-    
+
     if(auto bool_lit = dynamic_cast<BoolLiteral*>(expr)){
         return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::BOOL);
     }
-    
+
     if(auto str_lit = dynamic_cast<StringLiteral*>(expr)){
         return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::STR);
     }
-    
+
     if(auto pi_lit = dynamic_cast<PiLiteral*>(expr)){
         return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64);
     }
-    
+
     if (auto vec_lit = dynamic_cast<VectorLiteralExpr*>(expr)) {
 
-    // If we inferred before, reuse it
-    if (vec_lit->inferred_type) {
-        return vec_lit->inferred_type->clone();
+        // If we inferred before, reuse it
+        if (vec_lit->inferred_type) {
+            return vec_lit->inferred_type->clone();
+        }
+
+        // Empty vector → default element type = i64
+        TypePtr element_type;
+        if (vec_lit->elements.empty()) {
+            element_type = std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
+        } else {
+            element_type = infer_type(vec_lit->elements[0].get());
+        }
+
+        // Build vector type with element type + fixed size
+        auto vec_type = std::make_unique<VectorType>(element_type->clone());
+        vec_type->fixed_length = vec_lit->elements.size();
+
+        // Cache inside literal
+        vec_lit->inferred_type = vec_type->clone();
+
+        return vec_type;
     }
-
-    // Empty vector → default element type = i64
-    TypePtr element_type;
-    if (vec_lit->elements.empty()) {
-        element_type = std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
-    } else {
-        element_type = infer_type(vec_lit->elements[0].get());
-    }
-
-    // Build vector type with element type + fixed size
-    auto vec_type = std::make_unique<VectorType>(element_type->clone());
-    vec_type->fixed_length = vec_lit->elements.size();
-
-    // Cache inside literal
-    vec_lit->inferred_type = vec_type->clone();
-
-    return vec_type;
-}
     if (auto id = dynamic_cast<IdentifierExpr*>(expr)) {
 
-    Symbol* sym = sym_table.find(id->name);
-    if (!sym) {
-        report_error("Undeclared identifier '" + id->name + "'");
-        return nullptr;
+        Symbol* sym = sym_table.find(id->name);
+        if (!sym) {
+            report_error("Undeclared identifier '" + id->name + "'");
+            return nullptr;
+        }
+        if (!sym->type) {
+            report_error("Identifier '" + id->name + "' has no type");
+            return nullptr;
+        }
+
+        if (auto* vt = dynamic_cast<VectorType*>(sym->type.get())) {
+
+            auto cloned = std::make_unique<VectorType>(vt->element_type->clone());
+            cloned->fixed_length = vt->fixed_length;
+
+            return cloned;
+        }
+
+        return sym->type->clone();
     }
-    if (!sym->type) {
-        report_error("Identifier '" + id->name + "' has no type");
-        return nullptr;
-    }
-
-    // SPECIAL HANDLING FOR VECTOR TYPES
-    if (auto* vt = dynamic_cast<VectorType*>(sym->type.get())) {
-
-        auto cloned = std::make_unique<VectorType>(vt->element_type->clone());
-        cloned->fixed_length = vt->fixed_length; // copy new field
-
-        return cloned;
-    }
-
-    // All other types clone normally
-    return sym->type->clone();
-}
 
 
     if (auto un = dynamic_cast<UnaryExpression*>(expr)) {
@@ -693,11 +684,11 @@ TypePtr SemanticAnalyzer::infer_type(Expression* expr){
         return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
     }
 
-    
+
     if(auto bin = dynamic_cast<BinaryExpression*>(expr)){
         TypePtr left_type = infer_type(bin->left.get());
         TypePtr right_type = infer_type(bin->right.get());
-        
+
         switch(bin->op){
             case BinaryOp::EQUALS:
             case BinaryOp::NOTEQUAL:
@@ -712,19 +703,19 @@ TypePtr SemanticAnalyzer::infer_type(Expression* expr){
                 if (is_vector_type(left_type)) {
                     auto* LV = dynamic_cast<VectorType*>(left_type.get());
                     auto out = std::make_unique<VectorType>(LV->element_type->clone());
-                    out->fixed_length = 0; // result length depends on operation
+                    out->fixed_length = 0;
                     return out;
                 }
                 return left_type ? left_type->clone()
-                     : std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
+                : std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
 
         }
     }
-    
+
     if(auto cast_expr = dynamic_cast<TypeCastExpr*>(expr)){
         return cast_expr->type->clone();
     }
-    
+
     if(auto call = dynamic_cast<FunctionCallExpr*>(expr)){
         Symbol* sym = sym_table.find(call->callee);
         if(sym && sym->kind == SymbolKind::FUNCTION){
@@ -742,7 +733,7 @@ TypePtr SemanticAnalyzer::infer_type(Expression* expr){
         return t;
     }
 
-    
+
     return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
 }
 
@@ -756,12 +747,12 @@ bool SemanticAnalyzer::check_type_compatibility(const TypePtr& left, const TypeP
         if (!Rp) return false;
 
 
-    if (Lp->type == Rp->type)
-        return true;
+        if (Lp->type == Rp->type)
+            return true;
 
-    bool left_is_complex =
+        bool left_is_complex =
             (Lp->type == PrimitiveTypeEnum::C32 ||
-             Lp->type == PrimitiveTypeEnum::C64);
+            Lp->type == PrimitiveTypeEnum::C64);
 
         bool right_is_int_or_float =
             is_integer_type(right) || is_float_type(right);
@@ -769,12 +760,10 @@ bool SemanticAnalyzer::check_type_compatibility(const TypePtr& left, const TypeP
         if (left_is_complex && right_is_int_or_float)
             return true;
 
-        // complex widening: c32 → c64
         if (Lp->type == PrimitiveTypeEnum::C64 &&
             Rp->type == PrimitiveTypeEnum::C32)
             return true;
 
-        // Everything else: STRICT
         return false;
 
     }
@@ -809,31 +798,29 @@ bool SemanticAnalyzer::is_assignable(const TypePtr& left, const TypePtr& right){
 
 bool SemanticAnalyzer::can_cast_to(const TypePtr& from, const TypePtr& to){
     if(!from || !to) return false;
-    
+
     auto from_prim = dynamic_cast<PrimitiveType*>(from.get());
     auto to_prim = dynamic_cast<PrimitiveType*>(to.get());
-    
+
     if(!from_prim || !to_prim) return false;
-    
+
     if(is_numeric_type(from) && is_numeric_type(to)){
         return true;
     }
-    
+
     return false;
 }
 
 void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, const TypePtr& right, int line){
     if(!left || !right) return;
-    
+
     bool left_is_vector = is_vector_type(left);
     bool right_is_vector = is_vector_type(right);
-    
+
     switch(op){
         case BinaryOp::PLUS:
         case BinaryOp::MINUS:
-            // should allow numeric + numeric, vector + vector
             if(left_is_vector && right_is_vector){
-                // Check element type compatibility
                 auto left_vec = dynamic_cast<VectorType*>(left.get());
                 auto right_vec = dynamic_cast<VectorType*>(right.get());
                 if(!check_type_compatibility(left_vec->element_type, right_vec->element_type)){
@@ -847,12 +834,10 @@ void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, 
                 report_error("Cannot mix vector and scalar in addition/subtraction");
             }
             break;
-            
+
         case BinaryOp::MULTIPLY:
         case BinaryOp::DIVIDE:
-            // Allow: numeric * numeric, vector * scalar, scalar * vector
             if(left_is_vector && !right_is_vector){
-                // Scalar multiplication/division
                 if(!is_numeric_type(right)){
                     report_error("Scalar must be numeric type");
                 }
@@ -872,9 +857,8 @@ void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, 
                 }
             }
             break;
-            
+
         case BinaryOp::CONVOLUTION:
-            // vector convolution
             if(!left_is_vector || !right_is_vector){
                 report_error("Convolution requires vector types");
             } else {
@@ -885,7 +869,7 @@ void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, 
                 }
             }
             break;
-            
+
         case BinaryOp::MODULO:
         case BinaryOp::BITWISEAND:
         case BinaryOp::BITWISEOR:
@@ -896,7 +880,7 @@ void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, 
                 report_error("Bitwise operation requires integer types");
             }
             break;
-            
+
         case BinaryOp::AND:
         case BinaryOp::OR:
             if(!dynamic_cast<PrimitiveType*>(left.get()) || 
@@ -904,7 +888,7 @@ void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, 
                 report_error("Logical operation requires boolean types");
             }
             break;
-            
+
         default:
             break;
     }
@@ -912,7 +896,7 @@ void SemanticAnalyzer::check_binary_operation(BinaryOp op, const TypePtr& left, 
 
 void SemanticAnalyzer::check_unary_operation(UnaryOp op, const TypePtr& operand, int line){
     if(!operand) return;
-    
+
     switch(op){
         case UnaryOp::MINUS:
         case UnaryOp::PLUS:
@@ -920,7 +904,7 @@ void SemanticAnalyzer::check_unary_operation(UnaryOp op, const TypePtr& operand,
                 report_error("Unary +/- requires numeric type");
             }
             break;
-            
+
         case UnaryOp::NOT:
             if(auto prim = dynamic_cast<PrimitiveType*>(operand.get())){
                 if(prim->type != PrimitiveTypeEnum::BOOL){
@@ -928,7 +912,7 @@ void SemanticAnalyzer::check_unary_operation(UnaryOp op, const TypePtr& operand,
                 }
             }
             break;
-            
+
         case UnaryOp::REVERSE:
             if(!is_vector_type(operand)){
                 report_error("Reverse operator @ requires vector type");
@@ -944,7 +928,7 @@ bool SemanticAnalyzer::is_numeric_type(const TypePtr& type){
 bool SemanticAnalyzer::is_integer_type(const TypePtr& type){
     auto prim = dynamic_cast<PrimitiveType*>(type.get());
     if(!prim) return false;
-    
+
     switch(prim->type){
         case PrimitiveTypeEnum::I8:
         case PrimitiveTypeEnum::I16:
@@ -980,7 +964,7 @@ bool SemanticAnalyzer::is_vector_type(const TypePtr& type){
 
 std::string SemanticAnalyzer::type_to_string(const TypePtr& type){
     if(!type) return "unknown";
-    
+
     if(auto prim = dynamic_cast<PrimitiveType*>(type.get())){
         return primitive_type_to_string(prim->type);
     } else if(auto vec = dynamic_cast<VectorType*>(type.get())){
@@ -988,7 +972,7 @@ std::string SemanticAnalyzer::type_to_string(const TypePtr& type){
     } else if(auto struct_type = dynamic_cast<StructType*>(type.get())){
         return "struct " + struct_type->name;
     }
-    
+
     return "unknown";
 }
 
@@ -1027,18 +1011,9 @@ void SemanticAnalyzer::print_errors() const{
         std::cerr << err << std::endl;
     }
 }
-// TypePtr SemanticAnalyzer::get_index_expr_type(const IndexExpression* idx) {
-//     TypePtr objType = infer_type(idx->object.get());
-//     if (auto* vt = dynamic_cast<VectorType*>(objType.get())) {
-//         return vt->element_type->clone();
-//     }
-//     return nullptr;
-// }
-
 
 TypePtr SemanticAnalyzer::get_index_expr_type(const IndexExpression* idx) {
 
-    // Case 1: Object is an identifier → get the symbol type (most reliable)
     if (auto* id = dynamic_cast<IdentifierExpr*>(idx->object.get())) {
         Symbol* sym = sym_table.find(id->name);
         if (sym && sym->type) {
@@ -1048,12 +1023,11 @@ TypePtr SemanticAnalyzer::get_index_expr_type(const IndexExpression* idx) {
         }
     }
 
-    // Case 2: Vector literal → infer normally
     TypePtr t = infer_type(idx->object.get());
     if (auto* vt = dynamic_cast<VectorType*>(t.get())) {
-    auto out = vt->element_type->clone();
-    return out;
-}
+        auto out = vt->element_type->clone();
+        return out;
+    }
     report_error("Indexing a non-vector type");
     return nullptr;
 }

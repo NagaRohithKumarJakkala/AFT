@@ -302,9 +302,6 @@ std::unique_ptr<Types> StructType::clone() const {
     auto s = std::make_unique<StructType>(this->name);
     //TODO: implement after completion of type
 
-    // for (auto const& f : fields) {
-    //     s->fields.push_back(f->clone());
-    // }
     return s;
 
 }

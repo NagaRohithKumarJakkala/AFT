@@ -4,22 +4,22 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "elem_ids.h"   // e.g. defines E_I8, E_I16, E_U8, E_F32, E_F64, E_BOOL, etc.
+#include "elem_ids.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct VecHeader {
-    void   *data;      // pointer to element storage
-    int64_t length;    // number of elements logically in the vector
-    int64_t capacity;  // number of elements allocated
-    int32_t elemType;  // E_I64, E_F32, etc.
+    void   *data;
+    int64_t length;
+    int64_t capacity;
+    int32_t elemType;
 } VecHeader;
 
 static size_t elem_size(int32_t elemType) {
     switch (elemType) {
-        case E_BOOL: return sizeof(uint8_t);  // stored as 1 byte
+        case E_BOOL: return sizeof(uint8_t);
         case E_I8:   return sizeof(int8_t);
         case E_I16:  return sizeof(int16_t);
         case E_I32:  return sizeof(int32_t);
@@ -35,11 +35,10 @@ static size_t elem_size(int32_t elemType) {
         case E_F32:  return sizeof(float);
         case E_F64:  return sizeof(double);
 
-        // Complex numbers: (re, im)
         case E_C32:  return sizeof(float) * 2;
         case E_C64:  return sizeof(double) * 2;
 
-        case E_STR:  return sizeof(char*);  // store string pointers
+        case E_STR:  return sizeof(char*);
 
         default:
             fprintf(stderr, "vec_runtime: unknown elemType=%d\n", elemType);
@@ -130,8 +129,6 @@ void* vec_index_ptr(void *vec, int64_t index) {
     if (index < 0 || index >= vh->length) {
         fprintf(stderr, "vec_index_ptr: index %lld out of bounds [0,%lld)\n",
                 (long long)index, (long long)vh->length);
-        // You can abort() instead if you want hard failure:
-        // abort();
         return NULL;
     }
 
@@ -184,15 +181,12 @@ void* vector_concat(void *aPtr, void *bPtr) {
     size_t esz = elem_size(a->elemType);
     int64_t newLen = a->length + b->length;
 
-    // Allocate new vector with full capacity
     VecHeader *out = (VecHeader*)vec_create(a->elemType, newLen);
 
-    // Copy A’s data
     memcpy((char*)out->data,
            (char*)a->data,
            (size_t)a->length * esz);
 
-    // Copy B’s data after A
     memcpy((char*)out->data + (size_t)a->length * esz,
            (char*)b->data,
            (size_t)b->length * esz);
@@ -287,11 +281,6 @@ int64_t vector_size(void *vecPtr) {
     if (!v) return 0;
     return v->length * elem_size(v->elemType);
 }
-
-
-
-
-
 #ifdef __cplusplus
 }
 #endif

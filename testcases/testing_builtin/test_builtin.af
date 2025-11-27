@@ -1,4 +1,4 @@
-fn main() i32 {
+fn main(){
 
     print("=== INTEGER ABS TESTS ===");
     let a1: i8 = -5 as i8;
@@ -141,6 +141,4 @@ fn main() i32 {
     print(r[2]);
     print(r[3]);
     print(r[4]);*/
-
-    return 0 as i32;
 }

@@ -21,9 +21,9 @@ struct CodeGen{
     IRBuilder<> builder;
     SymbolTable &sym_table;
     SemanticAnalyzer* sem;
-    
+
     CodeGen(SymbolTable &sym, string moduleName, SemanticAnalyzer* sem)
-    : mod(std::make_unique<Module>(moduleName,ctx)),
+        : mod(std::make_unique<Module>(moduleName,ctx)),
         builder(ctx),
         sym_table(sym),
         sem(sem){}
@@ -52,7 +52,7 @@ struct CodeGen{
     int primitive_type_id(const Types* t);
     llvm::Type* elemTypeFromId(int id);
     int typeIdFromLLVM(llvm::Type *T);
-    
+
     Function* declare_vec_create();
     Function* declare_vec_resize();
     Function* declare_vec_index_ptr();
@@ -62,8 +62,6 @@ struct CodeGen{
 
 
     VectorInfo unpackVector(Value* vecHeader);
-    // Value* loadVectorElement(const VectorInfo &V, Value* index);
-    // void storeVectorElement(const VectorInfo &V, Value* index, Value* rhs);
     void storeVectorElementTyped(const VectorInfo &V,Value* index,Value* rhs,llvm::Type* elemType);
     Value* loadVectorElementTyped(const VectorInfo &V,Value* index,llvm::Type* expectedType);
 
