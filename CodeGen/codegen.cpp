@@ -38,23 +38,44 @@ Value* CodeGen::promoteToComplex(Value* v) {
             ST->getElementType(0)->isDoubleTy() &&
             ST->getElementType(1)->isDoubleTy())
             return v;
+            
+        if (ST->getNumElements() == 2 &&
+            ST->getElementType(0)->isFloatTy() &&
+            ST->getElementType(1)->isFloatTy()) {
+            
+            Value *re_f = builder.CreateExtractValue(v, {0});
+            Value *im_f = builder.CreateExtractValue(v, {1});
+            Value *re_d = builder.CreateFPExt(re_f, Type::getDoubleTy(ctx));
+            Value *im_d = builder.CreateFPExt(im_f, Type::getDoubleTy(ctx));
+            
+            llvm::StructType *C64 = llvm::StructType::get(ctx, {
+                Type::getDoubleTy(ctx),
+                Type::getDoubleTy(ctx)
+            });
+            
+            Value *u = UndefValue::get(C64);
+            u = builder.CreateInsertValue(u, re_d, {0});
+            u = builder.CreateInsertValue(u, im_d, {1});
+            return u;
+        }
     }
-
+    Value *real = v;
+    
+    // Convert to double
     if (Ty->isIntegerTy())
-        v = builder.CreateSIToFP(v, Type::getDoubleTy(ctx));
-    if (Ty->isFloatTy())
-        v = builder.CreateFPExt(v, Type::getDoubleTy(ctx));
+        real = builder.CreateSIToFP(real, Type::getDoubleTy(ctx));
+    else if (Ty->isFloatTy())
+        real = builder.CreateFPExt(real, Type::getDoubleTy(ctx));
 
-    llvm::StructType *C64 =
-        llvm::StructType::get(ctx, {
-            Type::getDoubleTy(ctx),
-            Type::getDoubleTy(ctx)
-        });
+    llvm::StructType *C64 = llvm::StructType::get(ctx, {
+        Type::getDoubleTy(ctx),
+        Type::getDoubleTy(ctx)
+    });
 
     Value *zero = ConstantFP::get(Type::getDoubleTy(ctx), 0.0);
 
     Value *u = UndefValue::get(C64);
-    u = builder.CreateInsertValue(u, v, {0});
+    u = builder.CreateInsertValue(u, real, {0});
     u = builder.CreateInsertValue(u, zero, {1});
     return u;
 }
@@ -186,17 +207,29 @@ Value* CodeGen::gen_expr(const Expression* e) {
     if (auto *cl = dynamic_cast<const ComplexLiteral*>(e)) {
         Value *re = gen_expr(cl->real.get());
         Value *im = gen_expr(cl->imag.get());
+        
+        if (!re || !im) return nullptr;
 
-        if (!re->getType()->isDoubleTy())
-            re = builder.CreateSIToFP(re, Type::getDoubleTy(ctx));
-        if (!im->getType()->isDoubleTy())
-            im = builder.CreateSIToFP(im, Type::getDoubleTy(ctx));
+        // Convert both to double for c64
+        if (!re->getType()->isDoubleTy()) {
+            if (re->getType()->isFloatTy())
+                re = builder.CreateFPExt(re, Type::getDoubleTy(ctx));
+            else if (re->getType()->isIntegerTy())
+                re = builder.CreateSIToFP(re, Type::getDoubleTy(ctx));
+        }
+        
+        if (!im->getType()->isDoubleTy()) {
+            if (im->getType()->isFloatTy())
+                im = builder.CreateFPExt(im, Type::getDoubleTy(ctx));
+            else if (im->getType()->isIntegerTy())
+                im = builder.CreateSIToFP(im, Type::getDoubleTy(ctx));
+        }
 
-        llvm::StructType *C64 =
-            llvm::StructType::get(ctx, {
-                llvm::Type::getDoubleTy(ctx),
-                llvm::Type::getDoubleTy(ctx)
-            });
+        // Create c64 struct { double, double }
+        llvm::StructType *C64 = llvm::StructType::get(ctx, {
+            llvm::Type::getDoubleTy(ctx),
+            llvm::Type::getDoubleTy(ctx)
+        });
 
         Value *undef = UndefValue::get(C64);
         undef = builder.CreateInsertValue(undef, re, {0});
@@ -300,34 +333,36 @@ Value* CodeGen::gen_expr(const Expression* e) {
     if (auto *bin = dynamic_cast<const BinaryExpression*>(e)) {
         Value *L = gen_expr(bin->left.get());
         Value *R = gen_expr(bin->right.get());
-        if (!L||!R){
-            return nullptr;
-        }
+        if (!L || !R) return nullptr;
 
-
+        // Helper to check if value is complex
         auto isComplex = [&](Value* v) {
             if (auto *ST = dyn_cast<llvm::StructType>(v->getType())) {
-                return ST->getNumElements() == 2 &&
-                ST->getElementType(0)->isDoubleTy() &&
-                ST->getElementType(1)->isDoubleTy();
+                if (ST->getNumElements() != 2) return false;
+                llvm::Type *t0 = ST->getElementType(0);
+                llvm::Type *t1 = ST->getElementType(1);
+                return (t0->isFloatTy() && t1->isFloatTy()) ||
+                    (t0->isDoubleTy() && t1->isDoubleTy());
             }
             return false;
         };
+
         bool Lc = isComplex(L);
         bool Rc = isComplex(R);
 
+        // Handle complex arithmetic
         if (Lc || Rc) {
+            // Promote both to c64
             L = promoteToComplex(L);
             R = promoteToComplex(R);
 
-            Value *Lr = builder.CreateExtractValue(L, {0});
-            Value *Li = builder.CreateExtractValue(L, {1});
-            Value *Rr = builder.CreateExtractValue(R, {0});
-            Value *Ri = builder.CreateExtractValue(R, {1});
+            Value *Lr = builder.CreateExtractValue(L, {0}, "L.re");
+            Value *Li = builder.CreateExtractValue(L, {1}, "L.im");
+            Value *Rr = builder.CreateExtractValue(R, {0}, "R.re");
+            Value *Ri = builder.CreateExtractValue(R, {1}, "R.im");
 
             llvm::Type *D = llvm::Type::getDoubleTy(ctx);
-            llvm::StructType *C64 =
-                llvm::StructType::get(ctx, {D, D});
+            llvm::StructType *C64 = llvm::StructType::get(ctx, {D, D});
 
             auto pack = [&](Value* re, Value* im) {
                 Value *u = llvm::UndefValue::get(C64);
@@ -337,116 +372,136 @@ Value* CodeGen::gen_expr(const Expression* e) {
             };
 
             switch (bin->op) {
-                case BinaryOp::PLUS:
-                    return pack(builder.CreateFAdd(Lr, Rr),
-                                builder.CreateFAdd(Li, Ri));
+                case BinaryOp::PLUS: {
+                    // (a+bi) + (c+di) = (a+c) + (b+d)i
+                    Value *re = builder.CreateFAdd(Lr, Rr, "add.re");
+                    Value *im = builder.CreateFAdd(Li, Ri, "add.im");
+                    return pack(re, im);
+                }
 
-                case BinaryOp::MINUS:
-                    return pack(builder.CreateFSub(Lr, Rr),
-                                builder.CreateFSub(Li, Ri));
+                case BinaryOp::MINUS: {
+                    // (a+bi) - (c+di) = (a-c) + (b-d)i
+                    Value *re = builder.CreateFSub(Lr, Rr, "sub.re");
+                    Value *im = builder.CreateFSub(Li, Ri, "sub.im");
+                    return pack(re, im);
+                }
 
                 case BinaryOp::MULTIPLY: {
-                    Value *re = builder.CreateFSub(builder.CreateFMul(Lr, Rr),
-                                                   builder.CreateFMul(Li, Ri));
-                    Value *im = builder.CreateFAdd(builder.CreateFMul(Lr, Ri),
-                                                   builder.CreateFMul(Li, Rr));
+                    // (a+bi) * (c+di) = (ac-bd) + (ad+bc)i
+                    Value *ac = builder.CreateFMul(Lr, Rr, "ac");
+                    Value *bd = builder.CreateFMul(Li, Ri, "bd");
+                    Value *ad = builder.CreateFMul(Lr, Ri, "ad");
+                    Value *bc = builder.CreateFMul(Li, Rr, "bc");
+                    
+                    Value *re = builder.CreateFSub(ac, bd, "mul.re");
+                    Value *im = builder.CreateFAdd(ad, bc, "mul.im");
                     return pack(re, im);
                 }
 
                 case BinaryOp::DIVIDE: {
-                    Value *den = builder.CreateFAdd(builder.CreateFMul(Rr,Rr),
-                                                    builder.CreateFMul(Ri,Ri));
+                    // (a+bi) / (c+di) = [(ac+bd) + (bc-ad)i] / (c²+d²)
+                    Value *cc = builder.CreateFMul(Rr, Rr, "c2");
+                    Value *dd = builder.CreateFMul(Ri, Ri, "d2");
+                    Value *den = builder.CreateFAdd(cc, dd, "den");
 
-                    Value *re_num = builder.CreateFAdd(builder.CreateFMul(Lr,Rr),
-                                                       builder.CreateFMul(Li,Ri));
-                    Value *im_num = builder.CreateFSub(builder.CreateFMul(Li,Rr),
-                                                       builder.CreateFMul(Lr,Ri));
+                    Value *ac = builder.CreateFMul(Lr, Rr, "ac");
+                    Value *bd = builder.CreateFMul(Li, Ri, "bd");
+                    Value *bc = builder.CreateFMul(Li, Rr, "bc");
+                    Value *ad = builder.CreateFMul(Lr, Ri, "ad");
 
-                    return pack(builder.CreateFDiv(re_num, den),
-                                builder.CreateFDiv(im_num, den));
+                    Value *re_num = builder.CreateFAdd(ac, bd, "re.num");
+                    Value *im_num = builder.CreateFSub(bc, ad, "im.num");
+
+                    Value *re = builder.CreateFDiv(re_num, den, "div.re");
+                    Value *im = builder.CreateFDiv(im_num, den, "div.im");
+                    return pack(re, im);
                 }
 
-                case BinaryOp::EQUALS:
-                    return builder.CreateAnd(
-                        builder.CreateFCmpOEQ(Lr, Rr),
-                        builder.CreateFCmpOEQ(Li, Ri)
-                    );
+                case BinaryOp::EQUALS: {
+                    // (a+bi) == (c+di)  iff  a==c && b==d
+                    Value *re_eq = builder.CreateFCmpOEQ(Lr, Rr, "re.eq");
+                    Value *im_eq = builder.CreateFCmpOEQ(Li, Ri, "im.eq");
+                    return builder.CreateAnd(re_eq, im_eq, "complex.eq");
+                }
+
+                case BinaryOp::NOTEQUAL: {
+                    // (a+bi) != (c+di)  iff  a!=c || b!=d
+                    Value *re_ne = builder.CreateFCmpONE(Lr, Rr, "re.ne");
+                    Value *im_ne = builder.CreateFCmpONE(Li, Ri, "im.ne");
+                    return builder.CreateOr(re_ne, im_ne, "complex.ne");
+                }
+
                 default:
-                    // TODO:PRINT ERROR
+                    errs() << "Operator not supported for complex numbers\n";
                     return nullptr;
             }
-
-            llvm::errs() << "Complex operator not implemented\n";
-            return nullptr;
         }
 
-
+        // Handle vector operations (unchanged)
         if (bin->op == BinaryOp::OR) {
             if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
                 Function *concatFn = functions["vector_concat"];
                 return builder.CreateCall(concatFn, {L, R}, "vconcat");
             }
-
-            if (bin->op == BinaryOp::CONVOLUTION) {
-                if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
-                    Function *convFn = functions["vector_convolution"];
-                    return builder.CreateCall(convFn, {L, R}, "vconv");
-                }
-            }
-
         }
 
-
-        if(bin->op == BinaryOp::EXPONENTIATE){
-            if (L->getType()->isIntegerTy() && R->getType()->isIntegerTy()) {
-                //TODO: implement convulution
-                //Function* concatFn = functions["vector_concat"];
-                errs() << "Vector convulution not yet implemented\n";
-                //return builder.CreateCall(concatFn, { L, R });
-                return nullptr;
-                auto it = functions.find("integer_exponentiation");
-                if (it == functions.end()) {
-                    errs() << "Internal error: builtin vector_concat not declared\n";
-                    return nullptr;
-                }
-
-                Function* expFn = it->second;
-
-                std::vector<Value*> argsV;
-                argsV.push_back(L);
-                argsV.push_back(R);
-
-                return builder.CreateCall(expFn,argsV,expFn->getReturnType()->isVoidTy() ? "" : "concat.calltmp");
+        if (bin->op == BinaryOp::CONVOLUTION) {
+            if (L->getType()->isPointerTy() && R->getType()->isPointerTy()) {
+                Function *convFn = functions["vector_convolution"];
+                return builder.CreateCall(convFn, {L, R}, "vconv");
             }
         }
 
-        bool fp = L->getType()->isFloatingPointTy() || R->getType()->isFloatingPointTy();
+        // Regular numeric operations
+        bool fp = L->getType()->isFloatingPointTy() || 
+                R->getType()->isFloatingPointTy();
+        
         if (fp) {
             if (!L->getType()->isFloatingPointTy())
                 L = builder.CreateSIToFP(L, llvm::Type::getDoubleTy(ctx));
             if (!R->getType()->isFloatingPointTy())
                 R = builder.CreateSIToFP(R, llvm::Type::getDoubleTy(ctx));
         }
+        
         switch (bin->op) {
-            case BinaryOp::PLUS: return fp ? builder.CreateFAdd(L,R) : builder.CreateAdd(L,R);
-            case BinaryOp::MINUS: return fp ? builder.CreateFSub(L,R) : builder.CreateSub(L,R);
-            case BinaryOp::MULTIPLY: return fp ? builder.CreateFMul(L,R) : builder.CreateMul(L,R);
-            case BinaryOp::DIVIDE: return fp ? builder.CreateFDiv(L,R) : builder.CreateSDiv(L,R);
-            case BinaryOp::MODULO: return fp ? nullptr : builder.CreateSRem(L,R);
-            case BinaryOp::EQUALS: return fp ? builder.CreateFCmpOEQ(L,R) : builder.CreateICmpEQ(L,R);
-            case BinaryOp::NOTEQUAL: return fp ? builder.CreateFCmpONE(L,R) : builder.CreateICmpNE(L,R);
-            case BinaryOp::LESSTHAN: return fp ? builder.CreateFCmpOLT(L,R) : builder.CreateICmpSLT(L,R);
-            case BinaryOp::GREATERTHAN: return fp ? builder.CreateFCmpOGT(L,R) : builder.CreateICmpSGT(L,R);
-            case BinaryOp::LESSTHANEQUAL: return fp ? builder.CreateFCmpOLE(L,R) : builder.CreateICmpSLE(L,R);
-            case BinaryOp::GREATERTHANEQUAL: return fp ? builder.CreateFCmpOGE(L,R) : builder.CreateICmpSGE(L,R);
-            case BinaryOp::AND: return builder.CreateAnd(boolToI1(builder,L), boolToI1(builder,R));
-            case BinaryOp::OR: return builder.CreateOr(boolToI1(builder,L), boolToI1(builder,R));
-            case BinaryOp::XOR: return builder.CreateXor(L,R);
-            case BinaryOp::BITWISEAND: return builder.CreateAnd(L,R);
-            case BinaryOp::BITWISEOR: return builder.CreateOr(L,R);
-            case BinaryOp::LEFTSHIFT: return builder.CreateShl(L,R);
-            case BinaryOp::RIGHTSHIFT: return builder.CreateAShr(L,R);
-            default: return nullptr;
+            case BinaryOp::PLUS: 
+                return fp ? builder.CreateFAdd(L,R) : builder.CreateAdd(L,R);
+            case BinaryOp::MINUS: 
+                return fp ? builder.CreateFSub(L,R) : builder.CreateSub(L,R);
+            case BinaryOp::MULTIPLY: 
+                return fp ? builder.CreateFMul(L,R) : builder.CreateMul(L,R);
+            case BinaryOp::DIVIDE: 
+                return fp ? builder.CreateFDiv(L,R) : builder.CreateSDiv(L,R);
+            case BinaryOp::MODULO: 
+                return fp ? nullptr : builder.CreateSRem(L,R);
+            case BinaryOp::EQUALS: 
+                return fp ? builder.CreateFCmpOEQ(L,R) : builder.CreateICmpEQ(L,R);
+            case BinaryOp::NOTEQUAL: 
+                return fp ? builder.CreateFCmpONE(L,R) : builder.CreateICmpNE(L,R);
+            case BinaryOp::LESSTHAN: 
+                return fp ? builder.CreateFCmpOLT(L,R) : builder.CreateICmpSLT(L,R);
+            case BinaryOp::GREATERTHAN: 
+                return fp ? builder.CreateFCmpOGT(L,R) : builder.CreateICmpSGT(L,R);
+            case BinaryOp::LESSTHANEQUAL: 
+                return fp ? builder.CreateFCmpOLE(L,R) : builder.CreateICmpSLE(L,R);
+            case BinaryOp::GREATERTHANEQUAL: 
+                return fp ? builder.CreateFCmpOGE(L,R) : builder.CreateICmpSGE(L,R);
+            case BinaryOp::AND: 
+                return builder.CreateAnd(boolToI1(builder,L), boolToI1(builder,R));
+            case BinaryOp::OR: 
+                return builder.CreateOr(boolToI1(builder,L), boolToI1(builder,R));
+            case BinaryOp::XOR: 
+                return builder.CreateXor(L,R);
+            case BinaryOp::BITWISEAND: 
+                return builder.CreateAnd(L,R);
+            case BinaryOp::BITWISEOR: 
+                return builder.CreateOr(L,R);
+            case BinaryOp::LEFTSHIFT: 
+                return builder.CreateShl(L,R);
+            case BinaryOp::RIGHTSHIFT: 
+                return builder.CreateAShr(L,R);
+            default: 
+                return nullptr;
         }
     }
     if (auto *idx = dynamic_cast<const IndexExpression*>(e)) {
@@ -544,23 +599,28 @@ Value* CodeGen::gen_expr(const Expression* e) {
                     llvm::Type *a = ST->getElementType(0);
                     llvm::Type *b = ST->getElementType(1);
 
-                    if (a == llvm::Type::getFloatTy(ctx) && b == llvm::Type::getFloatTy(ctx)) {
-                        Value *re = builder.CreateExtractValue(val, {0});
-                        Value *im = builder.CreateExtractValue(val, {1});
+                    // c32: {float, float}
+                    if (a->isFloatTy() && b->isFloatTy()) {
+                        Value *re = builder.CreateExtractValue(val, {0}, "re");
+                        Value *im = builder.CreateExtractValue(val, {1}, "im");
 
-                        Value *fmt = builder.CreateGlobalString("(%f, %f)\n");
-
+                        // Create format: "(%f + %fj)\n" or "(%f - %fj)\n"
+                        // We'll use conditional formatting based on sign
+                        Value *fmt = builder.CreateGlobalString("(%f + %fj)\n");
+                        
+                        // Promote to double for printf
                         re = builder.CreateFPExt(re, Type::getDoubleTy(ctx));
                         im = builder.CreateFPExt(im, Type::getDoubleTy(ctx));
 
                         return builder.CreateCall(printfFn, {fmt, re, im});
                     }
-                    if (a == llvm::Type::getDoubleTy(ctx) && b == llvm::Type::getDoubleTy(ctx)) {
-                        Value *re = builder.CreateExtractValue(val, {0});
-                        Value *im = builder.CreateExtractValue(val, {1});
+                    
+                    // c64: {double, double}
+                    if (a->isDoubleTy() && b->isDoubleTy()) {
+                        Value *re = builder.CreateExtractValue(val, {0}, "re");
+                        Value *im = builder.CreateExtractValue(val, {1}, "im");
 
-                        Value *fmt = builder.CreateGlobalString("(%f, %f)\n");
-
+                        Value *fmt = builder.CreateGlobalString("(%f + %fj)\n");
                         return builder.CreateCall(printfFn, {fmt, re, im});
                     }
                 }
