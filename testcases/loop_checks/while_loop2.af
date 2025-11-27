@@ -1,6 +1,6 @@
 fn main() {
     let i = 0;
-    let out: [i32] = [];
+    let out: [i32] = [1 as i32];
 
     while i < 4 {
         out = out || [i * i];

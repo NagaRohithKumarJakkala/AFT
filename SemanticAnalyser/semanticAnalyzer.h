@@ -64,11 +64,13 @@ class SemanticAnalyzer{
     void report_error(const std::string& msg);
     void check_binary_operation(BinaryOp op, const TypePtr& left, const TypePtr& right, int line);
     void check_unary_operation(UnaryOp op, const TypePtr& operand, int line);
+
     bool is_numeric_type(const TypePtr& type);
     bool is_integer_type(const TypePtr& type);
     bool is_float_type(const TypePtr& type);
     bool is_complex_type(const TypePtr& type);
     bool is_vector_type(const TypePtr& type);
+    
     bool is_builtin_function(const std::string& name);
 
 public:

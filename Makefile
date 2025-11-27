@@ -29,6 +29,9 @@ parser/lex.yy.o:parser/lex.yy.c
 
 AST_gen/print_ast.o:AST_gen/ast.cpp AST_gen/AST.h
 	$(CXX) $(CXXFLAGS) AST_gen/ast.cpp -o AST_gen/ast.o
+ast_printer: AST_gen/print_ast.o parser/aft.tab.o parser/lex.yy.o AST_gen/ast.o
+	$(CXX) -frtti `llvm-config --cxxflags` AST_gen/print_ast.cpp parser/aft.tab.o parser/lex.yy.o AST_gen/ast.o `llvm-config --ldflags --system-libs --libs core` -o ast_printer
+
 CodeGen/codegen.o: CodeGen/codegen.cpp CodeGen/codegen.h AST_gen/AST.h SemanticAnalyser/semanticAnalyzer.h
 	$(CXX) $(CXXFLAGS) CodeGen/codegen.cpp -o CodeGen/codegen.o
 

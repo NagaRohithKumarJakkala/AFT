@@ -7,4 +7,5 @@ parser/lex.yy.c
 * .exe
 * .out
 temps/temp.ll
-
+parser/aft.tab.c
+parser/aft.tab.h

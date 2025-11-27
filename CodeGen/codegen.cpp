@@ -484,6 +484,8 @@ if (Lc || Rc) {
         return nullptr;
     }
     if (auto *call = dynamic_cast<const FunctionCallExpr*>(e)) {
+        if (Value *v = gen_builtin_call(call))
+            return v;
 
         if (call->callee == "len") {
             Value *vecVal = gen_expr(call->arguments[0].get());

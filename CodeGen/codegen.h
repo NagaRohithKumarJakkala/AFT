@@ -15,8 +15,6 @@ struct VectorInfo {
 
 
 
-
-
 struct CodeGen{
     LLVMContext ctx;
     unique_ptr<Module>mod;
@@ -54,6 +52,7 @@ struct CodeGen{
     int primitive_type_id(const Types* t);
     llvm::Type* elemTypeFromId(int id);
     int typeIdFromLLVM(llvm::Type *T);
+    
     Function* declare_vec_create();
     Function* declare_vec_resize();
     Function* declare_vec_index_ptr();

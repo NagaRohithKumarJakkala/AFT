@@ -51,7 +51,6 @@ static bool can_implicitly_convert_primitive(PrimitiveTypeEnum from,
 }
 
 
-
 SymbolTable::SymbolTable(){
     enter_scope();
 }
@@ -1055,9 +1054,6 @@ TypePtr SemanticAnalyzer::get_index_expr_type(const IndexExpression* idx) {
     auto out = vt->element_type->clone();
     return out;
 }
-
-    
-
     report_error("Indexing a non-vector type");
     return nullptr;
 }

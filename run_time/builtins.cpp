@@ -1,10 +1,8 @@
-// Runtime/builtins.cpp
 #include <cmath>
 #include <complex>
 
 extern "C" {
 
-// ===================== BASIC MATH =====================
 
 // |x| for double
 double aft_abs_f64(double x) {
@@ -15,8 +13,6 @@ double aft_abs_f64(double x) {
 long long aft_abs_i64(long long x) {
     return x < 0 ? -x : x;
 }
-
-// sqrt, pow, exp, ln, log10, log2 on double
 
 double aft_sqrt_f64(double x) { return std::sqrt(x); }
 
@@ -30,7 +26,6 @@ double aft_log10_f64(double x) { return std::log10(x); }
 
 double aft_log2_f64(double x) { return std::log2(x); }
 
-// ===================== TRIG FUNCTIONS (real) =====================
 
 double aft_sin_f64(double x) { return std::sin(x); }
 double aft_cos_f64(double x) { return std::cos(x); }
@@ -55,9 +50,7 @@ double aft_cot_f64(double x) {
     return std::cos(x) / std::sin(x);
 }
 
-// ===================== COMPLEX FUNCTIONS (c64) =====================
 
-// This must match LLVM layout: struct { double re; double im; }
 struct aft_c64 {
     double re;
     double im;

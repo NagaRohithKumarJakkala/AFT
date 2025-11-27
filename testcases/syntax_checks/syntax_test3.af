@@ -1,7 +1,8 @@
 // Expected: No semantic errors
 fn main() i64 {
-    let x: c64 = 3.0 + 4.0i;
-    let y: c64 = 1.0 + 2.0i;
+    let x: c64 = 3.0 + 4.0j;
+    let y: c64 = 1.0 + 2.0j;
     let z: c64 = x + y;
+    print(z);
     return 0;
 }
