@@ -107,33 +107,61 @@ void SymbolTable::clear() {
     scopes.clear();
     enter_scope();
 }
+void SemanticAnalyzer::add_builtin(const std::string& name,
+                                   const std::vector<TypePtr>& params,
+                                   TypePtr return_type)
+{
+    Symbol s;
+    s.name = name;
+    s.kind = SymbolKind::FUNCTION;
 
-SemanticAnalyzer::SemanticAnalyzer(){
-    builtin_functions.insert("print");
-    builtin_functions.insert("printf");
-    builtin_functions.insert("sin");
-    builtin_functions.insert("cos");
-    builtin_functions.insert("sqrt");
-    builtin_functions.insert("pow");
-    builtin_functions.insert("exp");
-    builtin_functions.insert("log");
-    builtin_functions.insert("dbg");
-    builtin_functions.insert("abs");
-    builtin_functions.insert("ln");
-    builtin_functions.insert("log10");
-    builtin_functions.insert("log2");
-    builtin_functions.insert("tan");
-    builtin_functions.insert("arcsin");
-    builtin_functions.insert("arccos");
-    builtin_functions.insert("arctan");
-    builtin_functions.insert("sec");
-    builtin_functions.insert("cosec");
-    builtin_functions.insert("cot");
-    builtin_functions.insert("magnitude");
-    builtin_functions.insert("conj");
-    builtin_functions.insert("arg");
-    builtin_functions.insert("len");
-    builtin_functions.insert("isempty");
+    for (const auto &p : params) {
+        if (p)
+            s.parameter_types.push_back(p->clone());
+        else
+            s.parameter_types.push_back(nullptr);
+    }
+
+    if (return_type)
+        s.type = return_type->clone();
+    else
+        s.type = nullptr;
+
+    sym_table.add_symbol(s);
+}
+
+void SemanticAnalyzer::add_builtins() {
+
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::STR)); add_builtin("print", p, nullptr); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::STR)); add_builtin("printf", p, nullptr); }
+    { std::vector<TypePtr> p; add_builtin("dbg", p, nullptr); }
+
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("sin", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("cos", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("sqrt", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("exp", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("log", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("ln", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("log10", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("log2", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("tan", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("arcsin", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("arccos", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("arctan", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("sec", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("cosec", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("cot", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("abs", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); add_builtin("pow", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::C64)); add_builtin("magnitude", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::C64)); add_builtin("conj", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::C64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::C64)); add_builtin("arg", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64)); }
+
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<VectorType>(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64))); add_builtin("len", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64)); }
+    { std::vector<TypePtr> p; p.push_back(std::make_unique<VectorType>(std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64))); add_builtin("isempty", p, std::make_unique<PrimitiveType>(PrimitiveTypeEnum::BOOL)); }
 
     Symbol pi_const;
     pi_const.name = "PI";
@@ -141,12 +169,15 @@ SemanticAnalyzer::SemanticAnalyzer(){
     pi_const.type = std::make_unique<PrimitiveType>(PrimitiveTypeEnum::F64);
     pi_const.is_const = true;
     sym_table.add_symbol(pi_const);
+}
+
+
+SemanticAnalyzer::SemanticAnalyzer(){
 
 }
 
-bool SemanticAnalyzer::is_builtin_function(const std::string& name){
-    return builtin_functions.count(name) > 0;
-}
+
+
 
 SymbolTable& SemanticAnalyzer::get_symbol_table(){
     return sym_table;
@@ -156,7 +187,7 @@ void SemanticAnalyzer::check(Program* program){
     if(!program) return;
 
     sym_table.clear();
-
+    add_builtins();
 
     for(auto& block : program->Blocks){
         handle_node(block.get());
@@ -166,6 +197,7 @@ void SemanticAnalyzer::check(Program* program){
         print_errors();
     }
 }
+
 
 
 void SemanticAnalyzer::handle_node(ASTNode* node){
@@ -558,12 +590,11 @@ void SemanticAnalyzer::handle_expression(Expression* expr){
     }
 
     if(auto call = dynamic_cast<FunctionCallExpr*>(expr)){
-        if(!is_builtin_function(call->callee)){
-            Symbol* fn = sym_table.find(call->callee);
-            if(!fn){
-                report_error("Undeclared function '" + call->callee + "'");
-            }
+        Symbol* fn = sym_table.find(call->callee);
+        if (!fn) {
+            report_error("Undeclared function '" + call->callee + "'");
         }
+
         for(auto& a : call->arguments){
             handle_expression(a.get());
         }

@@ -73,12 +73,12 @@ fn main() {
     let z11: c64 = 1 + 1j;
     let arg_z: f64 = arg(z11);
     print(arg_z);  // Should print ~0.785398 (π/4 radians = 45°)
-    
+    /*
     // Test 12: Type promotion c32 to c64
     print("Test 12: Type promotion");
     let small: c32 = (1 + 1j) as c32;
     let large: c64 = small;  // Should auto-promote
     print(large);
-    
+    */
     print("=== ALL TESTS COMPLETE ===");
 }

@@ -42,7 +42,6 @@ public:
 class SemanticAnalyzer{
     SymbolTable sym_table;
     std::vector<std::string> errors;
-    std::unordered_set<std::string> builtin_functions;
     int current_line = 0;
     bool in_loop = false;
     std::vector<TypePtr> current_function_return_types;
@@ -71,7 +70,6 @@ class SemanticAnalyzer{
     bool is_complex_type(const TypePtr& type);
     bool is_vector_type(const TypePtr& type);
     
-    bool is_builtin_function(const std::string& name);
 
 public:
     SemanticAnalyzer();
@@ -80,6 +78,11 @@ public:
     bool has_errors() const;
     void print_errors() const;
     TypePtr get_index_expr_type(const IndexExpression* idx);
+    void add_builtin(const std::string& name,
+                 const std::vector<TypePtr>& params,
+                 TypePtr return_type);
+    void add_builtins();
+
 };
 
 #endif
