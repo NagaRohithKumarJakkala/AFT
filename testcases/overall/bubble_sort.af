@@ -1,0 +1,15 @@
+fn main () {
+    let x = [4, 2, 0, 6, 9];
+    for i in 0..len(x) {
+        for j in 0..len(x) - i - 1 {
+            if x[j] > x[j + 1] {
+                let tmp = x[j];
+                x[j] = x[j + 1];
+                x[j+1] = tmp;
+            }
+        }
+    }
+    for i in 0..len(x) {
+        print(x[i]);
+    }
+}

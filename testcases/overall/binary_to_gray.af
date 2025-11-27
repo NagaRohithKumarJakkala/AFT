@@ -1,0 +1,16 @@
+fn main () {
+    let binary = 123;
+    // Convert the binary string to gray code
+    let gray_code = binary ^ (binary >> 1);
+    print("Gray Code:");
+    print(gray_code);
+    // Convert the gray code string back to binary
+    let mask = gray_code;
+    let binary2 = gray_code;
+    while mask != 0 {
+        mask = mask >> 1;
+        binary2 = binary2 ^ mask;
+    }
+    print("Binary:");
+    print(binary2);
+}

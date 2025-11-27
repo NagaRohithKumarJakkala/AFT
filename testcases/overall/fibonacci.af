@@ -1,0 +1,10 @@
+fn main () {
+    let x = 0;
+    let y = 1;
+    for i in 0..10 {
+        print(y);
+        let next = x + y;
+        x = y;
+        y = next;
+    }
+}
