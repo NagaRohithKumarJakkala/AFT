@@ -82,6 +82,11 @@ public:
                  const std::vector<TypePtr>& params,
                  TypePtr return_type);
     void add_builtins();
+    
+    TypePtr infer_builtin_call_type(const std::string& name,const std::vector<TypePtr>& arg_types);
+
+    bool is_builtin_function(const std::string& name) const;
+
 
 };
 

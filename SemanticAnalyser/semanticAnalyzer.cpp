@@ -129,6 +129,200 @@ void SemanticAnalyzer::add_builtin(const std::string& name,
 
     sym_table.add_symbol(s);
 }
+bool SemanticAnalyzer::is_builtin_function(const std::string& name) const {
+    static const std::unordered_set<std::string> builtin_names = {"print", "printf", "dbg","sin", "cos", "tan",
+        "arcsin", "arccos", "arctan","sqrt", "exp", "log",
+         "ln", "log10", "log2","sec", "cosec", "cot","abs", "pow","magnitude", "conj", "arg","len", "isempty"};
+    return builtin_names.count(name) != 0;
+}
+
+TypePtr SemanticAnalyzer::infer_builtin_call_type(
+    const std::string& name,
+    const std::vector<TypePtr>& arg_types)
+{
+    auto arity = arg_types.size();
+
+    auto is_int    = [&](const TypePtr& t){ return is_integer_type(t);};
+
+    auto is_float  = [&](const TypePtr& t){ return is_float_type(t);};
+    auto is_complex= [&](const TypePtr& t){ return is_complex_type(t);};
+
+    auto as_prim = [&](const TypePtr& t) -> PrimitiveTypeEnum {
+        auto* p = dynamic_cast<PrimitiveType*>(t.get());
+        if (!p) {
+            return PrimitiveTypeEnum::STR;
+        }
+        return p->type;
+    };
+
+    auto make_prim = [](PrimitiveTypeEnum e) -> TypePtr {
+        return std::make_unique<PrimitiveType>(e);
+    };
+
+    if (name == "abs") {
+        if (arity != 1) {
+            report_error("abs() expects 1 argument, got " + std::to_string(arity));
+            return make_prim(PrimitiveTypeEnum::F64);
+        }
+
+        const auto& t = arg_types[0];
+        if (!dynamic_cast<PrimitiveType*>(t.get())) {
+            report_error("abs() argument must be a primitive numeric type");
+            return make_prim(PrimitiveTypeEnum::F64);
+        }
+
+        if (is_integer_type(t) || is_float_type(t)) {
+            return t->clone();
+        }
+
+        if (is_complex_type(t)) {
+            auto kind = as_prim(t);
+            if (kind == PrimitiveTypeEnum::C32)
+                return make_prim(PrimitiveTypeEnum::F32);
+            else
+                return make_prim(PrimitiveTypeEnum::F64);
+        }
+
+        report_error("abs() not defined for type " + type_to_string(t));
+        return make_prim(PrimitiveTypeEnum::F64);
+    }
+
+    auto is_unary_math =
+        (name == "sin"   || name == "cos"   || name == "tan"   ||
+        name == "arcsin"|| name == "arccos"|| name == "arctan"||name == "sqrt"  || name == "exp"   || name == "log"   ||
+name == "ln"    || name == "log2"  || name == "log10" ||name == "sec"   || name == "cosec" || name == "cot");
+
+    if (is_unary_math) {
+        if (arity != 1) {
+            report_error(name + "() expects 1 argument, got " + std::to_string(arity));
+            return make_prim(PrimitiveTypeEnum::F64);
+        }
+        const auto& t = arg_types[0];
+
+        if (!dynamic_cast<PrimitiveType*>(t.get())) {
+            report_error(name + "() argument must be a primitive numeric type");
+            return make_prim(PrimitiveTypeEnum::F64);
+        }
+
+        if (is_complex(t)) {
+            return t->clone();
+        }
+        if (is_float(t)) {
+            return t->clone();
+        }
+        if (is_int(t)) {
+            return make_prim(PrimitiveTypeEnum::F64);
+        }
+
+        report_error(name + "() not defined for type " + type_to_string(t));
+        return make_prim(PrimitiveTypeEnum::F64);
+    }
+
+    if (name == "pow") {
+        if (arity != 2) {
+            report_error("pow() expects 2 arguments, got " + std::to_string(arity));
+            return make_prim(PrimitiveTypeEnum::F64);
+        }
+        const auto& a = arg_types[0];
+        const auto& b = arg_types[1];
+
+        if (!dynamic_cast<PrimitiveType*>(a.get()) ||
+            !dynamic_cast<PrimitiveType*>(b.get())) {
+            report_error("pow() arguments must be primitive numeric types");
+            return make_prim(PrimitiveTypeEnum::F64);
+        }
+
+        bool a_complex = is_complex(a), b_complex = is_complex(b);
+        bool a_float   = is_float(a),   b_float   = is_float(b);
+        bool a_int     = is_int(a),     b_int     = is_int(b);
+
+        if (a_complex || b_complex) {
+            auto ka = as_prim(a), kb = as_prim(b);
+            if (ka == PrimitiveTypeEnum::C64 || kb == PrimitiveTypeEnum::C64)
+                return make_prim(PrimitiveTypeEnum::C64);
+            else
+                return make_prim(PrimitiveTypeEnum::C32);
+        }
+
+        if (a_float || b_float) {
+            auto ka = as_prim(a), kb = as_prim(b);
+            if (ka == PrimitiveTypeEnum::F64 || kb == PrimitiveTypeEnum::F64)
+                return make_prim(PrimitiveTypeEnum::F64);
+            else
+                return make_prim(PrimitiveTypeEnum::F32);
+        }
+
+        if (a_int && b_int) {
+            return make_prim(PrimitiveTypeEnum::F64);
+        }
+
+        report_error("pow() not defined for argument types (" +
+                     type_to_string(a) + ", " + type_to_string(b) + ")");
+        return make_prim(PrimitiveTypeEnum::F64);
+    }
+
+    if (name == "magnitude") {
+        if (arity != 1) {
+            report_error("magnitude() expects 1 argument");
+            return make_prim(PrimitiveTypeEnum::F64);
+        }
+        const auto& t = arg_types[0];
+        if (!is_complex(t)) {
+            report_error("magnitude() expects complex type, got " + type_to_string(t));
+        }
+        return make_prim(PrimitiveTypeEnum::F64);
+    }
+
+    if (name == "conj") {
+        if (arity != 1) {
+            report_error("conj() expects 1 argument");
+            return make_prim(PrimitiveTypeEnum::C64);
+        }
+        const auto& t = arg_types[0];
+        if (!is_complex(t)) {
+            report_error("conj() expects complex type, got " + type_to_string(t));
+            return make_prim(PrimitiveTypeEnum::C64);
+        }
+        return t->clone();
+    }
+
+    if (name == "arg") {
+        if (arity != 1) {
+            report_error("arg() expects 1 argument");
+            return make_prim(PrimitiveTypeEnum::F64);
+        }
+        const auto& t = arg_types[0];
+        if (!is_complex(t)) {
+            report_error("arg() expects complex type, got " + type_to_string(t));
+        }
+        return make_prim(PrimitiveTypeEnum::F64);
+    }
+
+    if (name == "len" || name == "isempty") {
+        if (arity != 1) {
+            report_error(name + "() expects 1 argument, got " + std::to_string(arity));
+            if (name == "len")
+                return make_prim(PrimitiveTypeEnum::I64);
+            else
+                return make_prim(PrimitiveTypeEnum::BOOL);
+        }
+
+        if (!is_vector_type(arg_types[0])) {
+            report_error(name + "() expects a vector argument, got " + type_to_string(arg_types[0]));
+        }
+        if (name == "len")
+            return make_prim(PrimitiveTypeEnum::I64);
+        else
+            return make_prim(PrimitiveTypeEnum::BOOL);
+    }
+
+    Symbol* sym = sym_table.find(name);
+    if (sym && sym->kind == SymbolKind::FUNCTION && sym->type) {
+        return sym->type->clone();
+    }
+
+    return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
+}
 
 void SemanticAnalyzer::add_builtins() {
 
@@ -660,24 +854,19 @@ TypePtr SemanticAnalyzer::infer_type(Expression* expr){
 
     if (auto vec_lit = dynamic_cast<VectorLiteralExpr*>(expr)) {
 
-        // If we inferred before, reuse it
         if (vec_lit->inferred_type) {
             return vec_lit->inferred_type->clone();
         }
 
-        // Empty vector → default element type = i64
         TypePtr element_type;
         if (vec_lit->elements.empty()) {
             element_type = std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
         } else {
             element_type = infer_type(vec_lit->elements[0].get());
         }
-
-        // Build vector type with element type + fixed size
         auto vec_type = std::make_unique<VectorType>(element_type->clone());
         vec_type->fixed_length = vec_lit->elements.size();
 
-        // Cache inside literal
         vec_lit->inferred_type = vec_type->clone();
 
         return vec_type;
@@ -747,14 +936,28 @@ TypePtr SemanticAnalyzer::infer_type(Expression* expr){
         return cast_expr->type->clone();
     }
 
-    if(auto call = dynamic_cast<FunctionCallExpr*>(expr)){
-        Symbol* sym = sym_table.find(call->callee);
-        if(sym && sym->kind == SymbolKind::FUNCTION){
-            if(sym->type){
-                return sym->type->clone();
-            }
-        }
+    if (auto call = dynamic_cast<FunctionCallExpr*>(expr)) {
+
+    // finding argument types
+    std::vector<TypePtr> arg_types;
+    arg_types.reserve(call->arguments.size());
+    for (auto& a : call->arguments) {
+        arg_types.push_back(infer_type(a.get()));
     }
+
+    // to overload
+    if (is_builtin_function(call->callee)) {
+        return infer_builtin_call_type(call->callee, arg_types);
+    }
+
+    Symbol* sym = sym_table.find(call->callee);
+    if (sym && sym->kind == SymbolKind::FUNCTION && sym->type) {
+        return sym->type->clone();
+    }
+
+    return std::make_unique<PrimitiveType>(PrimitiveTypeEnum::I64);
+}
+
 
     if (auto* idx = dynamic_cast<const IndexExpression*>(expr)) {
         TypePtr t = get_index_expr_type(idx);

@@ -72,8 +72,8 @@ fn main(){
 
 
     print("=== TRIG FUNCTIONS ===");
-    print("sin(PI/2) = ");
-    print(sin(PI / 2));
+    print("sin(PI/4) = ");
+    print(sin(PI / 4));
 
     print("cos(0) = ");
     print(cos(0));
