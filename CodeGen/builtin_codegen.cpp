@@ -230,7 +230,22 @@ llvm::Value* CodeGen::gen_builtin_call(const FunctionCallExpr* call) {
         }
         return true;
     };
+        if (name == "re") {
+        Value* z = gen_expr(call->arguments[0].get());
+        if (!z) return nullptr;
+        z = promoteToComplex(z);
 
+        return builder.CreateExtractValue(z, {0});  
+    }
+
+    if (name == "im") {
+        Value* z = gen_expr(call->arguments[0].get());
+        if (!z) return nullptr;
+
+        z = promoteToComplex(z);
+
+        return builder.CreateExtractValue(z, {1});  
+    }
     if (name == "abs") {
         Value *x;
         if (!get1(x)) return nullptr;
