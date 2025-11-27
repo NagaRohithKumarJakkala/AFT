@@ -1,0 +1,84 @@
+// Comprehensive complex number test
+
+fn main() {
+    print("=== COMPLEX NUMBER TESTS ===");
+    
+    // Test 1: Pure imaginary
+    print("Test 1: Pure imaginary");
+    let z1: c64 = 5j;
+    print(z1);  // Should print (0.000000 + 5.000000j)
+    
+    // Test 2: Complex literal
+    print("Test 2: Complex literal");
+    let z2: c64 = 3 + 4j;
+    print(z2);  // Should print (3.000000 + 4.000000j)
+    
+    // Test 3: Addition
+    print("Test 3: Addition");
+    let z3: c64 = 1 + 2j;
+    let z4: c64 = 3 + 4j;
+    let sum: c64 = z3 + z4;
+    print(sum);  // Should print (4.000000 + 6.000000j)
+    
+    // Test 4: Subtraction
+    print("Test 4: Subtraction");
+    let diff: c64 = z4 - z3;
+    print(diff);  // Should print (2.000000 + 2.000000j)
+    
+    // Test 5: Multiplication
+    print("Test 5: Multiplication");
+    let prod: c64 = (1 + 2j) * (3 + 4j);
+    print(prod);  // Should print (-5.000000 + 10.000000j)
+    // Calculation: (1+2j)*(3+4j) = (1*3 - 2*4) + (1*4 + 2*3)j = -5 + 10j
+    
+    // Test 6: Division
+    print("Test 6: Division");
+    let quot: c64 = (3 + 4j) / (1 + 2j);
+    print(quot);  // Should print (2.200000 + -0.400000j)
+    // Calculation: (3+4j)/(1+2j) = [(3*1+4*2) + (4*1-3*2)j] / (1²+2²)
+    //                             = [11 + (-2)j] / 5 = 2.2 - 0.4j
+    
+    // Test 7: Scalar addition
+    print("Test 7: Scalar + complex");
+    let z5: c64 = 5 + (3 + 4j);
+    print(z5);  // Should print (8.000000 + 4.000000j)
+    
+    // Test 8: Equality
+    print("Test 8: Equality");
+    let z6: c64 = 3 + 4j;
+    let z7: c64 = 3 + 4j;
+    let z8: c64 = 5 + 6j;
+    if (z6 == z7) {
+        print("z6 == z7: true");
+    }
+    if (z6 != z8) {
+        print("z6 != z8: true");
+    }
+    
+    // Test 9: Magnitude
+    print("Test 9: Magnitude");
+    let z9: c64 = 3 + 4j;
+    let mag: f64 = magnitude(z9);
+    print(mag);  // Should print 5.000000
+    // |3+4j| = sqrt(3²+4²) = sqrt(25) = 5
+    
+    // Test 10: Conjugate
+    print("Test 10: Conjugate");
+    let z10: c64 = 3 + 4j;
+    let conj_z: c64 = conj(z10);
+    print(conj_z);  // Should print (3.000000 + -4.000000j)
+    
+    // Test 11: Argument (phase)
+    print("Test 11: Argument");
+    let z11: c64 = 1 + 1j;
+    let arg_z: f64 = arg(z11);
+    print(arg_z);  // Should print ~0.785398 (π/4 radians = 45°)
+    
+    // Test 12: Type promotion c32 to c64
+    print("Test 12: Type promotion");
+    let small: c32 = (1 + 1j) as c32;
+    let large: c64 = small;  // Should auto-promote
+    print(large);
+    
+    print("=== ALL TESTS COMPLETE ===");
+}
