@@ -3,6 +3,7 @@
 #include "SemanticAnalyser/semanticAnalyzer.h"
 #include "parser/aft.tab.h"
 #include <memory>
+#include "llvm/Support/TargetSelect.h"
 
 
 extern Program* ast_root;
@@ -40,6 +41,10 @@ void merge_programs(Program* dest, Program* src) {
 
 
 int main(int argc, char** argv) {
+    // Initialize LLVM
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+
     if (argc < 2) {
         fprintf(stderr, "Error: Cannot open file %s\n", argv[1]);
         return 1;
