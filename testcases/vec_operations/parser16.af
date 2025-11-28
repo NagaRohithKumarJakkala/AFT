@@ -1,5 +1,13 @@
-fn main() {
-    let ys:[f64] = [10.0, 20.0, 30.0];
-    print(ys[2]);
+fn main() i64 {
+    let signal: [i64] = [1, 2, 3];
+    let kernel: [i64] = [0, 1, 0];
+    
+    // Convolution happens in C runtime
+    let result: [i64] = signal .* kernel; 
+
+    // We can also reverse vectors
+    let rev: [i64] = ~signal;
+    
+    return 0;
 }
 

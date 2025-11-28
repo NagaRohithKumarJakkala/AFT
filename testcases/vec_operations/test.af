@@ -1,5 +1,9 @@
-fn main(){
-    for i in 0..6 {
-        print(i);
-    }
+fn main() i64 {
+    let signal: [i64] = [1, 2, 3];
+    let kernel: [i64] = [0, 1, 0];
+    
+    We can also reverse vectors
+    let rev: [i64] = ~signal;
+    
+    return 0;
 }
