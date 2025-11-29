@@ -1,0 +1,31 @@
+// Extend to other types as well
+fn convolve(a: [c64], b: [c64]) [c64] {
+    let result: [c64] = [];
+    for i in 0..len(a)+len(b)-1 {
+        result = result || [0.0];
+    }
+    for i in 0..len(a) {
+        for j in 0..len(b) {
+            result[i + j] = result[i + j] + a[i] * b[j];
+        }
+    }
+    return result;
+}
+
+fn cross_correlation(a: [c64], b: [c64]) [c64] {
+    let n = len(a);
+    let m = len(b);
+    let corr: [c64] = [];
+    for i in 0..n + m - 1 {
+        corr = corr || [0.0];
+    }
+    for k in 0..n + m - 1 {
+        for i in 0..n {
+            let j = k - i;
+            if 0 <= j && j < m {
+                corr[k] = corr[k] + a[i] * conj(b[j]);
+            }
+        }
+    }
+    return corr;
+}

@@ -1,0 +1,7 @@
+fn ifft(X: [c64]) [c64] {
+    let N = len(X);
+    let X_conj = conj(X);
+    x_temp = fft(X_conj);
+    x_conj = conj(x_temp)
+    return x / N
+}
